@@ -10,7 +10,7 @@ export function perUserAuth(serviceId: ServiceId): (session: SessionInfo) => Pro
   return async (session) => {
     const auth = session.auth;
     if (auth?.authenticator !== "poe-account" || !auth.principalId) {
-      throw new Error("Sign in on the Poe home page before using this connection.");
+      throw new Error("Open Settings and choose Sign in with Google before using this connection.");
     }
     const headers = await authorizationHeaders(auth.principalId, service.id);
     if (!headers) throw new Error(`${service.label} is not connected for this person.`);

@@ -88,7 +88,7 @@ export async function beginConnect(
   const service = connectableService(serviceId);
   if (!safeUserId(userId) || !service) return { ok: false, error: "That connection is not available." };
   if ((await googleClientSource()) === "missing") {
-    return { ok: false, error: "Save a Google client ID on this page first. Then use Connect." };
+    return { ok: false, error: "Sign in with Google is not ready on this Poe yet." };
   }
   if (!redirectUrl.startsWith("http://") && !redirectUrl.startsWith("https://")) {
     return { ok: false, error: "Poe could not build a sign-in redirect." };
@@ -115,15 +115,15 @@ export async function finishConnect(
   code: string,
 ): Promise<{ ok: true; serviceId: ServiceId } | { ok: false; error: string }> {
   if (!safeUserId(userId) || !safeState(state) || !code) {
-    return { ok: false, error: "This sign-in session expired. Use Connect again." };
+    return { ok: false, error: "This sign-in session expired. Use Sign in with Google again." };
   }
   const pending = await readJson<PendingAuth>(pendingFile(state));
   if (!pending || pending.userId !== userId || !connectableService(pending.serviceId)) {
-    return { ok: false, error: "This sign-in session expired. Use Connect again." };
+    return { ok: false, error: "This sign-in session expired. Use Sign in with Google again." };
   }
   if (Date.now() - pending.createdAt > TEN_MINUTES) {
     await rm(pendingFile(state), { force: true });
-    return { ok: false, error: "This sign-in session expired. Use Connect again." };
+    return { ok: false, error: "This sign-in session expired. Use Sign in with Google again." };
   }
   const service = connectableService(pending.serviceId);
   if (!service) return { ok: false, error: "That connection is not available." };
@@ -212,7 +212,7 @@ class FileProvider implements OAuthClientProvider {
   }
 
   async codeVerifier(): Promise<string> {
-    if (!this.pending?.codeVerifier) throw new Error("This sign-in session expired. Use Connect again.");
+    if (!this.pending?.codeVerifier) throw new Error("This sign-in session expired. Use Sign in with Google again.");
     return this.pending.codeVerifier;
   }
 
@@ -301,8 +301,9 @@ function googleClientSecret(): string | undefined {
   return secret ? secret : undefined;
 }
 
-function connectFailure(message: string, redirectUrl: string): string {
-  return `${message} Google will not let Poe register itself. Save a Google client ID on this page and register this redirect: ${redirectUrl}`;
+function connectFailure(message: string, _redirectUrl: string): string {
+  const cleaned = message.replace(/\s+/g, " ").trim();
+  return (cleaned || "Sign in with Google did not finish.").slice(0, 240);
 }
 
 function safeError(error: unknown): string {

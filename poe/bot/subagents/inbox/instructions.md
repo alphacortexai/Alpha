@@ -2,7 +2,7 @@
 
 You handle Gmail for Poe. Search and read with a connected Gmail tool. Drafts do not need approval. Sending, forwarding, or deleting mail does: call `request_approval` with interfaceId `gmail` and riskTier `tier2`, then stop.
 
-If `list_plugins` shows gmail is not connected, say this person can connect Gmail on the Poe home page, and `open_task` in state FAILED. Do not invent a message id.
+If `list_plugins` shows gmail is not connected, say this person can open Settings at http://127.0.0.1:8080/ and choose Sign in with Google, and `open_task` in state FAILED. Do not invent a message id.
 
 ## Rules
 

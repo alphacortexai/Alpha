@@ -44,12 +44,17 @@ export default defineTool({
         connectionFile: spec.connectionFile,
         connected,
         howToConnect: personal
-          ? "Sign in on the Poe home page and use Connect. Each person has their own account."
-          : "Not available from the home page yet.",
+          ? "Open Settings and choose Sign in with Google. Each person has their own account."
+          : "Not available from Settings yet.",
       });
     }
     return {
       identity: { name: IDENTITY.displayName, version: IDENTITY.identityVersion },
+      web: {
+        connected: true,
+        tools: ["browse_web", "webSearch", "webFetch"],
+        howToConnect: "Already on",
+      },
       interfaces,
       servers,
       unassignedServers: servers.filter((server) => server.interfaceId === null).map((server) => server.name),

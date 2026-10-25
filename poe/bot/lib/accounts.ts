@@ -54,11 +54,14 @@ export async function signUp(input: {
   email: string;
   password: string;
   displayName?: string;
+  timezone?: string;
 }): Promise<{ ok: true; user: PublicUser } | { ok: false; error: string }> {
   const email = normalizeEmail(input.email);
   const passwordError = passwordProblem(input.password);
   if (!email) return { ok: false, error: "Enter a valid email address." };
   if (passwordError) return { ok: false, error: passwordError };
+  const timezone = (input.timezone ?? "").trim() || "UTC";
+  if (!validTimezone(timezone)) return { ok: false, error: "Enter a timezone such as Africa/Kampala or UTC." };
   const displayName = cleanName(input.displayName, email);
   return locked(async () => {
     const users = await readUsers();
@@ -69,7 +72,7 @@ export async function signUp(input: {
       id: `usr_${randomBytes(16).toString("hex")}`,
       email,
       displayName,
-      timezone: "UTC",
+      timezone,
       notes: "",
       createdAt: new Date().toISOString(),
       ...(await hashPassword(input.password)),
