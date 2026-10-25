@@ -4,6 +4,9 @@ export default defineAgent({
   name: "Poe",
   description:
     "Personal assistant that routes work to specialists and uses whatever MCP interfaces are plugged in.",
+  hosting: {
+    egressDomains: ["gmailmcp.googleapis.com"],
+  },
   model: {
     id: "grok-4.5",
     params: [
