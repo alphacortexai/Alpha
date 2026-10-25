@@ -12,15 +12,17 @@ npx @grok/agent-sdk validate --dir .
 npx @grok/agent-sdk dev
 ```
 
-The playground is the live session view. The home page is where people sign up, set preferences, and connect Gmail or Calendar: [http://127.0.0.1:3000/poe/v1/channels/home](http://127.0.0.1:3000/poe/v1/channels/home). If `dev` prints a playground URL without `/poe`, drop that segment. Restart `dev` after pulling this change. The local debug console is [http://127.0.0.1:3000/poe/v1/channels/debug/view](http://127.0.0.1:3000/poe/v1/channels/debug/view).
+Restart `dev` after pulling this change. Poe prints a short address, [http://127.0.0.1:8080/](http://127.0.0.1:8080/). Open that. The same landing, register, login, chat, and settings pages are also on the channel path, [http://127.0.0.1:3000/poe/v1/channels/home](http://127.0.0.1:3000/poe/v1/channels/home). If `dev` prints a playground URL without `/poe`, drop that segment. The playground is the live session view. The local debug console is [http://127.0.0.1:3000/poe/v1/channels/debug/view](http://127.0.0.1:3000/poe/v1/channels/debug/view).
 
 ## Accounts
 
-Anyone can create an account on that page. Poe's soul stays the default. Display name, timezone, and notes are stored for that person and added on top. Passwords are hashed. The session cookie is `HttpOnly` and `SameSite=Lax`.
+Anyone can create an account from that address. Poe's soul stays the default. Display name, timezone, and notes are stored for that person and added on top. Passwords are hashed. The session cookie is `HttpOnly` and `SameSite=Lax`.
 
-Connect opens Google in the browser for that signed-in person only. Google does not let Poe register an OAuth client by itself, so the page asks once for a Google client ID. Gmail can read, draft, and send. Calendar can check availability and manage events. Sends and calendar changes still wait for approval. WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins are listed and marked not available yet.
+Web browsing is already on through `browse_web`, and the harness also has `webSearch` and `webFetch`. There is no web connection file to add.
 
-Account files stay in `poe/.poe-accounts/` and are not committed. On Cursor-managed hosting a custom page cannot return HTML to the browser, so this screen is for local `dev` or a supervised `serve`.
+Sign in with Google, from Settings, opens Google's account chooser for that person when an app id is already saved (One-time setup) or set as `POE_GOOGLE_CLIENT_ID` and `POE_GOOGLE_CLIENT_SECRET`. Google will not let Poe register itself. Gmail can read, draft, and send. Calendar can check availability and manage events. Sends and calendar changes still wait for approval. WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins are listed under Coming later.
+
+Account files stay in `poe/.poe-accounts/` and are not committed. On Cursor-managed hosting a custom channel returns an empty 202, so these pages are for local `dev` or a supervised `serve`. Hosted egress stays on the listed domains. Local browsing uses `browse_web`.
 
 ## Specialists
 
@@ -36,7 +38,7 @@ Account files stay in `poe/.poe-accounts/` and are not committed. On Cursor-mana
 
 ## Plug in an MCP server
 
-Gmail and Google Calendar are connected from the home page, one account per person. The other named interfaces in `bot/skills/plug-in/SKILL.md` are not connected yet. A new API gets a catalog entry and a Connect button. Do not mark it connected before sign-in succeeds.
+Gmail and Google Calendar use Sign in with Google from Settings, one account per person. The other named interfaces in `bot/skills/plug-in/SKILL.md` are listed under Coming later. A new API gets a catalog entry and a Sign in with Google button when a real server exists. Mark it connected after sign-in succeeds.
 
 ## Inbound events
 
@@ -57,6 +59,9 @@ A task becomes COMPLETED only when the trace contains a successful result from t
 ```bash
 npx tsc --noEmit -p .
 npx tsx bot/lib/store.test.ts
+npx tsx bot/lib/accounts.test.ts
+npx tsx bot/lib/site.test.ts
+npx tsx bot/lib/web.test.ts
 npx @grok/agent-sdk tool call list_plugins --dir . --input '{}'
 npx @grok/agent-sdk eval --dir . --list
 ```

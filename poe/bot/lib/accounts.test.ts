@@ -14,7 +14,7 @@ import {
   updatePreferences,
   userFromRequest,
 } from "./accounts.js";
-import { authorizationHeaders, userHasService } from "./user-oauth.js";
+import { authorizationHeaders, beginConnect, userHasService } from "./user-oauth.js";
 
 const dir = await mkdtemp(path.join(tmpdir(), "poe-accounts-"));
 setAccountsDirForTests(dir);
@@ -106,12 +106,12 @@ try {
   assert.deepEqual(adaHeaders, { Authorization: "Bearer ada-token" });
   assert.equal(beaHeaders, null);
 
-  const page = homePage({
+  const pageView = {
     base: "http://127.0.0.1:3000/poe/v1/channels/home/",
     callbackUrl: "http://127.0.0.1:3000/poe/v1/channels/home/oauth/callback",
-    debugUrl: "../debug/view",
+    debugUrl: "http://127.0.0.1:3000/poe/v1/channels/debug/view",
     notice: "",
-    googleClient: "missing",
+    googleClient: "missing" as const,
     user: {
       email: created.user.email,
       displayName: "Ada",
@@ -119,14 +119,40 @@ try {
       notes: `<script>alert(1)</script>`,
     },
     services: [
-      { id: "gmail", label: "Gmail", summary: "Read mail", state: "ready" },
-      { id: "whatsapp", label: "WhatsApp", summary: "Messages", state: "soon" },
+      { id: "gmail", label: "Gmail", summary: "Read mail", state: "ready" as const },
+      { id: "google-calendar", label: "Google Calendar", summary: "Events", state: "ready" as const },
+      { id: "whatsapp", label: "WhatsApp", summary: "Messages", state: "soon" as const },
     ],
-  });
+  };
+  const page = homePage({ ...pageView, screen: "settings" });
   assert.equal(page.includes("<script>alert(1)</script>"), false);
   assert.equal(page.includes("&lt;script&gt;alert(1)&lt;/script&gt;"), true);
   assert.match(page, /data-connect="gmail"/);
+  assert.match(page, /data-connect="google-calendar"/);
   assert.doesNotMatch(page, /data-connect="whatsapp"/);
+  assert.match(page, /Sign in with Google/);
+  assert.match(page, /<details>/);
+  assert.match(page, /One-time setup/);
+  assert.match(page, /<base href="http:\/\/127\.0\.0\.1:3000\/poe\/v1\/channels\/home\/" \/>/);
+  assert.doesNotMatch(page, /Cloud Console/);
+  assert.match(page, /Web browsing is on/);
+
+  const landing = homePage({ ...pageView, screen: "landing", user: null });
+  assert.match(landing, /href="register"/);
+  assert.match(landing, /Create account/);
+  assert.doesNotMatch(landing, /data-connect/);
+  assert.doesNotMatch(landing, /Cloud Console/);
+
+  const previousClient = process.env.POE_GOOGLE_CLIENT_ID;
+  delete process.env.POE_GOOGLE_CLIENT_ID;
+  try {
+    const missing = await beginConnect(created.user.id, "gmail", "http://127.0.0.1:8080/oauth/callback");
+    assert.equal(missing.ok, false);
+    if (!missing.ok) assert.equal(missing.error, "Sign in with Google is not ready on this Poe yet.");
+  } finally {
+    if (previousClient === undefined) delete process.env.POE_GOOGLE_CLIENT_ID;
+    else process.env.POE_GOOGLE_CLIENT_ID = previousClient;
+  }
 
   assert.match(clearSessionCookie(false), /Max-Age=0/);
   console.log("accounts.test.ts ok");

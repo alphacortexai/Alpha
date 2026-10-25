@@ -30,7 +30,7 @@ export const CONNECTABLE_SERVICES: readonly ConnectableService[] = [
   },
 ];
 
-/** Shown on the page so the map is visible. No Connect button until a real server exists. */
+/** Shown on Settings under Coming later. No sign-in button until a real server exists. */
 export const UPCOMING_SERVICES: readonly UpcomingService[] = [
   {
     id: "google-docs",
@@ -70,7 +70,7 @@ export const UPCOMING_SERVICES: readonly UpcomingService[] = [
   {
     id: "other-mcp",
     label: "Other MCP plugins",
-    summary: "New APIs show up here as Connect buttons. Poe does not mark one connected until sign-in succeeds.",
+    summary: "New APIs show up here when they can be signed in.",
   },
 ];
 

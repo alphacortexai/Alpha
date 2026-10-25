@@ -8,18 +8,22 @@ description: >-
 
 # Plug an interface into Poe
 
-People connect Gmail and Google Calendar from the Poe home page (`/v1/channels/home`) after they sign up. Each person gets their own token. Poe's soul stays the same; name, timezone, and notes are preferences on top.
+People open http://127.0.0.1:8080/ (the line Poe prints). The same pages live on `/v1/channels/home`: landing, register, login, chat, and settings. Create an account, then open Settings and choose Sign in with Google for Gmail or Calendar. Each person gets their own token. Poe's soul stays the same; name, timezone, and notes are preferences on top.
 
-The home page lists WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins without a Connect button. Those are not connected. Do not tell someone they are.
+Web browsing is already on through `browse_web`, plus the harness tools `webSearch` and `webFetch`. There is no web connection file to add.
 
-## On the page now
+WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins are listed under Coming later. They are not available from Settings yet.
 
-| Service | What Connect does |
+On Cursor-managed hosting the custom channel returns an empty 202. These pages are for local dev and serve.
+
+## On Settings now
+
+| Service | What Sign in with Google does |
 | --- | --- |
 | Gmail | Read, draft, and send. Sending still waits for approval. |
 | Google Calendar | Check availability and manage events. Changes still wait for approval. |
 
-Google sign-in starts in the browser from the Connect button. Google does not allow Poe to register itself, so save a Google OAuth client ID on the home page once (or set `POE_GOOGLE_CLIENT_ID` and, when the client has one, `POE_GOOGLE_CLIENT_SECRET` in the environment). Register the redirect URL printed on the page. Do not put those values in a command argument.
+Sign in with Google opens Google's account chooser when this Poe already has an app id. Save that id in Settings under One-time setup, or set `POE_GOOGLE_CLIENT_ID` and, when the app has one, `POE_GOOGLE_CLIENT_SECRET` in the environment. Google will not let Poe register itself. Keep those values out of command arguments. The redirect address is inside One-time setup.
 
 Tokens live under `.poe-accounts/` on this machine, mode 0600. They are not in git and they are not shared between accounts.
 
@@ -27,7 +31,7 @@ Tokens live under `.poe-accounts/` on this machine, mode 0600. They are not in g
 
 `bot/mcp-connections/gmail.ts` and `bot/mcp-connections/google-calendar.ts` attach those servers per signed-in person. A turn with no Poe account skips them. Adding `oauth: true` would share one mailbox with every account, so do not switch them to that.
 
-## Not on the page yet
+## Coming later
 
 | Interface | File, when a real server exists |
 | --- | --- |
@@ -39,7 +43,7 @@ Tokens live under `.poe-accounts/` on this machine, mode 0600. They are not in g
 | Google calls | `bot/mcp-connections/google-calls.ts` |
 | Google Docs | `bot/mcp-connections/google-docs.ts` |
 
-Any other filename is handled by the `plugins` subagent. Do not invent a Connect button for a URL that is not in the catalog.
+Any other filename is handled by the `plugins` subagent. A URL outside the catalog stays under Coming later until a real server exists.
 
 ## Remote MCP
 

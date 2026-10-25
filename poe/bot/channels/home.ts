@@ -11,8 +11,10 @@ import {
   userFromRequest,
   type PublicUser,
 } from "../lib/accounts.js";
-import { homePage, type HomeService } from "../lib/home-page.js";
+import { startPoeDoor, stopPoeDoor } from "../lib/door.js";
+import { homePage, type HomeScreen, type HomeService } from "../lib/home-page.js";
 import { CONNECTABLE_SERVICES, UPCOMING_SERVICES } from "../lib/services.js";
+import { debugViewUrl, publicBaseFromRequest } from "../lib/site.js";
 import { beginConnect, connectedServiceIds, disconnectService, finishConnect, googleClientSource, saveAppGoogleClient } from "../lib/user-oauth.js";
 
 const pageQuery = z.object({
@@ -30,6 +32,7 @@ const signupBody = z.object({
   email: z.string().min(1).max(200),
   password: z.string().min(1).max(200),
   displayName: z.string().max(80).optional(),
+  timezone: z.string().max(80).optional(),
 });
 
 const loginBody = z.object({
@@ -59,27 +62,53 @@ const chatBody = z.object({
 export default defineChannel({
   // Loopback only. The page sets its own signed-in cookie after that.
   auth: [localDevStrict()],
+  onStart(args) {
+    startPoeDoor(args.logger);
+  },
+  onStop() {
+    return stopPoeDoor();
+  },
   routes: [
     GET("/", {
-      description: "Poe home page: sign up, preferences, and Connect.",
+      description: "Poe landing page.",
       querySchema: pageQuery,
-      handler: async (request, { query }) => html(await renderHome(request, query.notice ?? "")),
+      handler: async (request, { query }) => page(request, "landing", query.notice ?? ""),
+    }),
+    GET("/register", {
+      description: "Create a Poe account.",
+      querySchema: pageQuery,
+      handler: async (request, { query }) => page(request, "register", query.notice ?? ""),
+    }),
+    GET("/login", {
+      description: "Sign in to Poe.",
+      querySchema: pageQuery,
+      handler: async (request, { query }) => page(request, "login", query.notice ?? ""),
+    }),
+    GET("/chat", {
+      description: "Talk to Poe.",
+      querySchema: pageQuery,
+      handler: async (request, { query }) => page(request, "chat", query.notice ?? ""),
+    }),
+    GET("/settings", {
+      description: "Preferences and Sign in with Google.",
+      querySchema: pageQuery,
+      handler: async (request, { query }) => page(request, "settings", query.notice ?? ""),
     }),
     GET("/oauth/callback", {
-      description: "Finish Google sign-in started from the home page.",
+      description: "Finish Google sign-in started from Settings.",
       querySchema: callbackQuery,
       handler: async (request, { query }) => {
         const user = await userFromRequest(request);
-        if (!user) return redirectHome(request, "Sign in to Poe again, then use Connect.");
+        if (!user) return redirectTo(request, "login", "Sign in to Poe again, then use Sign in with Google.");
         if (query.error) {
           const cancelled = query.error === "access_denied";
-          return redirectHome(request, cancelled ? "Google cancelled the sign-in." : "Google refused the sign-in. Use Connect again.");
+          return redirectTo(request, "settings", cancelled ? "Google cancelled the sign-in." : "Google refused the sign-in. Use Sign in with Google again.");
         }
-        if (!query.code || !query.state) return redirectHome(request, "Google did not finish sign-in. Use Connect again.");
+        if (!query.code || !query.state) return redirectTo(request, "settings", "Google did not finish sign-in. Use Sign in with Google again.");
         const done = await finishConnect(user.id, query.state, query.code);
-        if (!done.ok) return redirectHome(request, done.error);
+        if (!done.ok) return redirectTo(request, "settings", done.error);
         const label = CONNECTABLE_SERVICES.find((service) => service.id === done.serviceId)?.label ?? "Account";
-        return redirectHome(request, `${label} is connected.`);
+        return redirectTo(request, "settings", `${label} is connected.`);
       },
     }),
     POST("/signup", {
@@ -117,7 +146,7 @@ export default defineChannel({
       },
     }),
     POST("/google-client", {
-      description: "Save the one Google OAuth client used by Connect on this computer.",
+      description: "Save the one Google app id used by Sign in with Google on this computer.",
       bodySchema: googleClientBody,
       handler: async (request, { body }) => {
         const user = await requireUser(request);
@@ -128,7 +157,7 @@ export default defineChannel({
       },
     }),
     POST("/connect", {
-      description: "Start Google sign-in for Gmail or Calendar for the signed-in person.",
+      description: "Start Sign in with Google for Gmail or Calendar for the signed-in person.",
       bodySchema: serviceBody,
       handler: async (request, { body }) => {
         const user = await requireUser(request);
@@ -229,8 +258,23 @@ function oneLine(value: string): string {
   return value.replace(/[\r\n]/g, " ").slice(0, 200);
 }
 
-async function renderHome(request: Request, notice: string): Promise<string> {
+async function page(request: Request, screen: HomeScreen, notice: string): Promise<Response> {
   const user = await userFromRequest(request);
+  if (user && (screen === "landing" || screen === "register" || screen === "login")) {
+    return redirectTo(request, "chat");
+  }
+  if (!user && (screen === "chat" || screen === "settings")) {
+    return redirectTo(request, "login");
+  }
+  return html(await renderHome(request, screen, notice, user));
+}
+
+async function renderHome(
+  request: Request,
+  screen: HomeScreen,
+  notice: string,
+  user: PublicUser | undefined,
+): Promise<string> {
   const connected = new Set(user ? await connectedServiceIds(user.id) : []);
   const services: HomeService[] = [
     ...CONNECTABLE_SERVICES.map((service) => ({
@@ -249,9 +293,10 @@ async function renderHome(request: Request, notice: string): Promise<string> {
   return homePage({
     base: pageBase(request),
     callbackUrl: callbackUrl(request),
-    debugUrl: "../debug/view",
+    debugUrl: debugViewUrl(request),
     notice: notice.replace(/[\r\n]/g, " ").slice(0, 400),
     googleClient: await googleClientSource(),
+    screen,
     user: user
       ? {
           email: user.email,
@@ -265,18 +310,18 @@ async function renderHome(request: Request, notice: string): Promise<string> {
 }
 
 function pageBase(request: Request): string {
-  const url = new URL(request.url);
-  const path = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
-  return `${url.origin}${path}`;
+  const base = publicBaseFromRequest(request);
+  return base.endsWith("/") ? base : `${base}/`;
 }
 
 function callbackUrl(request: Request): string {
   return `${pageBase(request)}oauth/callback`;
 }
 
-function redirectHome(request: Request, notice: string): Response {
-  const url = new URL(pageBase(request));
-  url.searchParams.set("notice", notice.slice(0, 400));
+function redirectTo(request: Request, path: string, notice = ""): Response {
+  const url = new URL(path, pageBase(request));
+  const cleaned = notice.replace(/[\r\n]/g, " ").slice(0, 400);
+  if (cleaned) url.searchParams.set("notice", cleaned);
   return Response.redirect(url, 303);
 }
 
