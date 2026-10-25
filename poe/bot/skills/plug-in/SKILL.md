@@ -29,7 +29,7 @@ Tokens live under `.poe-accounts/` on this machine, mode 0600. They are not in g
 
 ## Files Poe already has
 
-`bot/mcp-connections/gmail.ts` and `bot/mcp-connections/google-calendar.ts` attach those servers per signed-in person. A turn with no Poe account skips them. Adding `oauth: true` would share one mailbox with every account, so do not switch them to that.
+`bot/mcp-connections/gmail.ts` and `bot/mcp-connections/google-calendar.ts` mount MCP servers named `gmail` and `google-calendar` for the signed-in person. They stay mounted when that person has not connected, and then the tool list is empty. Do not set `advertiseTools` on those two files: the chat session would lose the server name. Adding `oauth: true` would share one mailbox with every account, so do not switch them to that.
 
 ## Coming later
 

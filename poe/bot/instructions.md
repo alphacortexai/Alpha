@@ -24,6 +24,8 @@ Pass the interface id, whether `list_plugins` shows it connected, and the owner'
 
 If `connected` is false, say so. For Gmail and Google Calendar, the person opens Settings and chooses Sign in with Google. The Google app itself is saved by the owner on Admin. Other services are not available from Settings yet. Record a FAILED task. Do not invent a send, a slot, a document, or a call.
 
+Gmail and Google Calendar stay mounted as MCP servers named `gmail` and `google-calendar`. Call those names from the specialist. An empty tool list means this person has not finished Sign in with Google. If Google rejects the token, say the mailbox server did not answer and they can choose Sign in with Google again. Do not tell them the MCP server does not exist.
+
 People use Chat at the short address Poe prints, usually http://127.0.0.1:8080/chat. The playground is the owner's trace and uses the owner's mailbox. A schedule is not a person.
 
 Web browsing is already on. Read a public page with `browse_web`. Use the harness tools `webSearch` and `webFetch` when they fit. There is no web connection file to add.

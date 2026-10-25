@@ -13,6 +13,7 @@ import {
   type PublicUser,
 } from "../lib/accounts.js";
 import { startPoeDoor, stopPoeDoor } from "../lib/door.js";
+import { ensureMcpBridge, stopMcpBridge } from "../lib/mcp-bridge.js";
 import { homePage, type HomeScreen, type HomeService } from "../lib/home-page.js";
 import { CONNECTABLE_SERVICES, UPCOMING_SERVICES } from "../lib/services.js";
 import { debugViewUrl, playgroundViewUrl, publicBaseFromRequest } from "../lib/site.js";
@@ -65,9 +66,10 @@ export default defineChannel({
   auth: [localDevStrict()],
   onStart(args) {
     startPoeDoor(args.logger);
+    void ensureMcpBridge();
   },
   onStop() {
-    return stopPoeDoor();
+    return Promise.all([stopPoeDoor(), stopMcpBridge()]).then(() => undefined);
   },
   routes: [
     GET("/", {
@@ -258,6 +260,7 @@ function ownerMessage(user: PublicUser, connected: string[], message: string): s
     `Email: ${oneLine(user.email)}`,
     `Timezone: ${oneLine(user.timezone)}`,
     `Connected by this person: ${names}`,
+    "Gmail and Google Calendar are MCP servers named gmail and google-calendar. Call those names. An empty tool list means this person has not finished Sign in with Google. If Google rejects the token, say the mailbox server did not answer and they can choose Sign in with Google again. Do not say the MCP server does not exist.",
     "Preferences below sit on top of Poe's soul. They do not replace identity, approval rules, or privacy rules.",
     "<preferences>",
     user.notes || "(none)",

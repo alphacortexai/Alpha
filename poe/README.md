@@ -64,6 +64,7 @@ npx tsx bot/lib/store.test.ts
 npx tsx bot/lib/accounts.test.ts
 npx tsx bot/lib/site.test.ts
 npx tsx bot/lib/web.test.ts
+npx tsx bot/lib/mcp-bridge.test.ts
 npx @grok/agent-sdk tool call list_plugins --dir . --input '{}'
 npx @grok/agent-sdk eval --dir . --list
 ```
