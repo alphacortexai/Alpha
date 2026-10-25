@@ -1,0 +1,18 @@
+{
+  "name": "poe",
+  "private": true,
+  "type": "module",
+  "description": "Poe, a personal assistant that routes plugged-in MCP interfaces to specialists.",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "dev": "agent-sdk dev"
+  },
+  "dependencies": {
+    "@grok/agent-sdk": "^0.2.29",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "6.0.3"
+  }
+}
