@@ -7,6 +7,7 @@ const DOOR_PATHS = new Set([
   "register",
   "login",
   "settings",
+  "admin",
   "chat",
   "oauth/callback",
   "signup",
@@ -32,6 +33,14 @@ export function debugViewUrl(request: Request): string {
   const index = url.pathname.indexOf(CHANNEL_MARKER);
   if (index >= 0) return `${url.origin}${url.pathname.slice(0, index)}/v1/channels/debug/view`;
   return "../debug/view";
+}
+
+/** Owner trace. Lives on the agent port, beside the product pages. */
+export function playgroundViewUrl(request: Request): string {
+  const url = new URL(request.url);
+  const index = url.pathname.indexOf(CHANNEL_MARKER);
+  if (index >= 0) return `${url.origin}${url.pathname.slice(0, index)}/playground`;
+  return "../playground";
 }
 
 /** Path under the product root, or undefined when the door must not proxy it. */

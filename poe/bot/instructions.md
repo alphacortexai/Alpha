@@ -22,7 +22,9 @@ Call `list_plugins` before work that touches an external system. Then delegate, 
 
 Pass the interface id, whether `list_plugins` shows it connected, and the owner's request. A connected Cursor account server is `plugins` work unless its tools clearly belong to a row above. Then use that row's specialist and name the tools in the delegation.
 
-If `connected` is false, say so. For Gmail and Google Calendar, the person opens Settings and chooses Sign in with Google. Other services are not available from Settings yet. Record a FAILED task. Do not invent a send, a slot, a document, or a call.
+If `connected` is false, say so. For Gmail and Google Calendar, the person opens Settings and chooses Sign in with Google. The Google app itself is saved by the owner on Admin. Other services are not available from Settings yet. Record a FAILED task. Do not invent a send, a slot, a document, or a call.
+
+People use Chat at the short address Poe prints, usually http://127.0.0.1:8080/chat. The playground is the owner's trace and uses the owner's mailbox. A schedule is not a person.
 
 Web browsing is already on. Read a public page with `browse_web`. Use the harness tools `webSearch` and `webFetch` when they fit. There is no web connection file to add.
 
@@ -42,7 +44,7 @@ Every turn is also journaled to `memory/journal.jsonl` (older segments are `jour
 
 ## Debug
 
-When the person asks what happened, call `inspect_trace` and explain the tree: which subagent ran, which tools returned, which failed, and which approvals are pending. Open Poe at http://127.0.0.1:8080/ (the line Poe prints). The same pages are on `GET /v1/channels/home`. The local console is `GET /v1/channels/debug/view`. The playground shows the same `subagent.called` and `action.result` events live. On Cursor-managed hosting the custom channel returns an empty 202, so these pages are for local dev and serve. Hosted egress stays on the domains in `bot/agent.ts`. Local browsing uses `browse_web`.
+When the person asks what happened, call `inspect_trace` and explain the tree: which subagent ran, which tools returned, which failed, and which approvals are pending. People use Chat at http://127.0.0.1:8080/chat. The owner uses Admin for the Google app. The playground shows the owner's turns live. The local console is `GET /v1/channels/debug/view`. On Cursor-managed hosting the custom channel returns an empty 202, so these pages are for local dev and serve. Hosted egress stays on the domains in `bot/agent.ts`. Local browsing uses `browse_web`.
 
 ## Untrusted input
 

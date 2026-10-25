@@ -1,4 +1,4 @@
-export type HomeScreen = "landing" | "register" | "login" | "chat" | "settings";
+export type HomeScreen = "landing" | "register" | "login" | "chat" | "settings" | "admin";
 
 export type HomeService = {
   id: string;
@@ -11,6 +11,7 @@ export type HomeView = {
   base: string;
   callbackUrl: string;
   debugUrl: string;
+  playgroundUrl: string;
   notice: string;
   googleClient: "environment" | "page" | "missing";
   screen: HomeScreen;
@@ -19,6 +20,7 @@ export type HomeView = {
     displayName: string;
     timezone: string;
     notes: string;
+    owner: boolean;
   } | null;
   services: HomeService[];
 };
@@ -67,10 +69,23 @@ export function homePage(view: HomeView): string {
     .badge.on { background: #1e3a2a; color: #b7d7b0; }
     .card h3 { margin: 0 0 6px; font-size: 18px; }
     .card p { color: #d6d3d1; min-height: 48px; }
-    .transcript { min-height: 180px; max-height: 420px; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
-    .bubble { border-radius: 12px; padding: 10px 12px; white-space: pre-wrap; }
-    .mine { background: #2a261c; align-self: flex-end; max-width: 85%; }
-    .poe { background: #17140f; border: 1px solid #3a3428; align-self: flex-start; max-width: 85%; }
+    .transcript { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+    .bubble { border-radius: 16px; padding: 12px 14px; white-space: pre-wrap; line-height: 1.45; }
+    .mine { background: #3a3120; align-self: flex-end; max-width: min(70%, 640px); }
+    .poe { background: #221e18; border: 1px solid #3a3428; align-self: flex-start; max-width: min(78%, 720px); }
+    .poe a { display: inline-block; margin-top: 8px; font-size: 13px; }
+    body[data-screen="chat"] { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    body[data-screen="chat"] header { flex: none; }
+    body[data-screen="chat"] main.chat-shell { flex: 1; max-width: none; width: 100%; min-height: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 0; padding: 0; }
+    .rail { padding: 22px 18px; background: #1c1914; border-right: 1px solid #2e2a22; overflow: auto; }
+    .rail h2 { margin-top: 22px; }
+    .who { font-size: 18px; margin: 4px 0; }
+    .thread { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: #100e0b; }
+    .thread .transcript { flex: 1; padding: 28px 8vw 12px; }
+    .empty { color: #a8a29e; margin: auto; max-width: 28rem; text-align: center; }
+    .composer { display: flex; gap: 8px; align-items: flex-end; padding: 12px 8vw 18px; border-top: 1px solid #2e2a22; background: #14120e; }
+    .composer textarea { min-height: 52px; max-height: 160px; margin: 0; }
+    .chip { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #2e2a22; font-size: 14px; }
     .status { color: #f0a8a8; min-height: 1.2em; margin-top: 8px; }
     .hint { margin-top: 8px; color: #a8a29e; font-size: 14px; }
     details { background: #1c1914; border: 1px solid #2e2a22; border-radius: 14px; padding: 12px 16px; }
@@ -78,7 +93,7 @@ export function homePage(view: HomeView): string {
     code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; word-break: break-all; }
     footer { padding: 8px 24px 24px; color: #78716c; font-size: 13px; }
     :focus-visible { outline: 2px solid #e7c27a; outline-offset: 2px; }
-    @media (max-width: 640px) {
+    @media (max-width: 800px) {
       header, main, footer { padding-left: 16px; padding-right: 16px; }
       header { display: block; }
       nav { margin-top: 12px; }
@@ -86,19 +101,25 @@ export function homePage(view: HomeView): string {
       .lede { font-size: 18px; }
       .grid { grid-template-columns: 1fr; }
       main button, main .button { width: 100%; }
+      body[data-screen="chat"] { height: 100dvh; }
+      body[data-screen="chat"] header, body[data-screen="chat"] main { padding-left: 0; padding-right: 0; }
+      body[data-screen="chat"] header { padding: 12px 16px; }
+      body[data-screen="chat"] main.chat-shell { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+      .rail { border-right: 0; border-bottom: 1px solid #2e2a22; max-height: 34vh; }
+      .thread .transcript, .composer { padding-left: 16px; padding-right: 16px; }
+      .mine, .poe { max-width: 92%; }
     }
   </style>
 </head>
 <body data-screen="${esc(view.screen)}">
   <header>
     <h1><a href="${signedIn ? "chat" : "./"}">Poe</a></h1>
-    ${signedIn ? navHtml(view.screen) : ""}
+    ${signedIn ? navHtml(view.screen, view.user?.owner === true) : ""}
   </header>
-  <main>
-    ${view.notice ? `<div class="banner" id="notice">${esc(view.notice)}</div>` : `<div class="banner" id="notice" hidden></div>`}
+  <main class="${view.screen === "chat" ? "chat-shell" : ""}">
+    ${view.screen === "chat" ? "" : view.notice ? `<div class="banner" id="notice">${esc(view.notice)}</div>` : `<div class="banner" id="notice" hidden></div>`}
     ${screenHtml(view)}
   </main>
-  <footer><a href="${esc(view.debugUrl)}">Debug</a></footer>
   <noscript><p>This page needs JavaScript to create an account and sign in.</p></noscript>
   <script>
     const base = ${JSON.stringify(base).replace(/</g, "\\u003c")};
@@ -172,7 +193,7 @@ export function homePage(view: HomeView): string {
       });
     }
 
-    ${view.screen === "settings" ? settingsScript() : ""}
+    ${view.screen === "settings" || view.screen === "admin" ? settingsScript(view.screen) : ""}
 
     const chat = document.querySelector("#chat");
     const transcript = document.querySelector("#transcript");
@@ -182,6 +203,8 @@ export function homePage(view: HomeView): string {
         const message = chat.message.value.trim();
         if (!message) return;
         chat.message.value = "";
+        const placeholder = transcript.querySelector(".empty");
+        if (placeholder) placeholder.remove();
         addBubble(message, "mine");
         const pending = addBubble("Poe is working…", "poe");
         const button = chat.querySelector("button");
@@ -192,7 +215,10 @@ export function homePage(view: HomeView): string {
           if (data.playgroundUrl) {
             const link = document.createElement("a");
             link.href = data.playgroundUrl;
-            link.textContent = " Open the trace";
+            link.textContent = "Open the trace";
+            link.target = "_blank";
+            link.rel = "noreferrer";
+            pending.appendChild(document.createElement("br"));
             pending.appendChild(link);
           }
         } catch (error) {
@@ -202,6 +228,15 @@ export function homePage(view: HomeView): string {
           transcript.scrollTop = transcript.scrollHeight;
         }
       });
+      const field = chat.querySelector("textarea");
+      if (field) {
+        field.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            chat.requestSubmit();
+          }
+        });
+      }
     }
 
     function addBubble(text, className) {
@@ -222,15 +257,19 @@ function screenHtml(view: HomeView): string {
   if (view.screen === "login") return loginHtml();
   if (view.screen === "chat") return chatHtml(view);
   if (view.screen === "settings") return settingsHtml(view);
+  if (view.screen === "admin") return adminHtml(view);
   return landingHtml();
 }
 
-function navHtml(screen: HomeScreen): string {
+function navHtml(screen: HomeScreen, owner: boolean): string {
   const chat = screen === "chat" ? ` aria-current="page"` : "";
   const settings = screen === "settings" ? ` aria-current="page"` : "";
+  const admin = screen === "admin" ? ` aria-current="page"` : "";
+  const adminLink = owner ? `<a class="button quiet" href="admin"${admin}>Admin</a>` : "";
   return `<nav>
     <a class="button quiet" href="chat"${chat}>Chat</a>
     <a class="button quiet" href="settings"${settings}>Settings</a>
+    ${adminLink}
     <button type="button" class="quiet" id="logout">Log out</button>
   </nav>`;
 }
@@ -238,7 +277,7 @@ function navHtml(screen: HomeScreen): string {
 function landingHtml(): string {
   return `<section>
     <p class="lede">Poe is your assistant for mail, calendar, and the web.</p>
-    <p class="muted" style="margin-top:10px">Create an account, then talk to Poe in chat. Web browsing is already on. Gmail and Calendar use Sign in with Google from Settings.</p>
+    <p class="muted" style="margin-top:10px">Create an account, then open Chat. Connect your own Gmail from Settings. The person who runs Poe handles the Google app.</p>
     <div class="row">
       <a class="button" href="register">Create account</a>
       <a class="button quiet" href="login">Sign in</a>
@@ -282,18 +321,34 @@ function loginHtml(): string {
 }
 
 function chatHtml(view: HomeView): string {
-  const name = view.user?.displayName ? ` ${esc(view.user.displayName)}` : "";
-  return `<section>
-    <h2>Chat</h2>
-    <p class="muted">Hello${name}. Ask about mail, your calendar, or a public web page.</p>
-    <div class="transcript" id="transcript"></div>
-    <form id="chat">
-      <label for="chat-message">Message</label>
-      <textarea id="chat-message" name="message" maxlength="8000" placeholder="What is on my calendar today?"></textarea>
-      <div class="row"><button type="submit">Send</button></div>
-      <p class="status" id="chat-status"></p>
-    </form>
-  </section>`;
+  const name = view.user?.displayName ?? "there";
+  const mail = view.services.find((service) => service.id === "gmail");
+  const calendar = view.services.find((service) => service.id === "google-calendar");
+  return `<aside class="rail">
+      <p class="muted">Signed in</p>
+      <p class="who">${esc(name)}</p>
+      <p class="muted">${esc(view.user?.email ?? "")}</p>
+      <h2>On this account</h2>
+      ${chip("Web", "On")}
+      ${chip("Gmail", mail?.state === "connected" ? "Signed in" : "Connect in Settings")}
+      ${chip("Calendar", calendar?.state === "connected" ? "Signed in" : "Connect in Settings")}
+      <div class="row"><a class="button" href="settings">Your accounts</a></div>
+    </aside>
+    <section class="thread">
+      ${view.notice ? `<div class="banner" id="notice">${esc(view.notice)}</div>` : `<div class="banner" id="notice" hidden></div>`}
+      <div class="transcript" id="transcript">
+        <p class="empty">Ask Poe about your mail, your calendar, or a public page. Enter sends. Shift+Enter adds a line.</p>
+      </div>
+      <form id="chat" class="composer">
+        <label class="muted" for="chat-message" style="position:absolute;left:-999px">Message</label>
+        <textarea id="chat-message" name="message" maxlength="8000" placeholder="Message Poe"></textarea>
+        <button type="submit">Send</button>
+      </form>
+    </section>`;
+}
+
+function chip(label: string, value: string): string {
+  return `<div class="chip"><span>${esc(label)}</span><span>${esc(value)}</span></div>`;
 }
 
 function settingsHtml(view: HomeView): string {
@@ -314,8 +369,22 @@ function settingsHtml(view: HomeView): string {
       <div class="grid">
         ${later.map((service) => soonCard(service)).join("")}
       </div>
-    </section>
-    ${googleSetupHtml(view)}`;
+    </section>`;
+}
+
+function adminHtml(view: HomeView): string {
+  return `<section>
+    <h2>Owner</h2>
+    <p>People use this Poe from the address you gave them. They create an account, talk in Chat, and connect their own Gmail from Settings.</p>
+    <p class="hint">You save the Google app here, once. While that app is in Testing, add each person's Gmail address as a test user.</p>
+    ${googleSetupHtml(view)}
+    <h2 style="margin-top:22px">Your trace</h2>
+    <p class="hint">The playground is your view of turns. It uses your Gmail, because you are the owner. New people stay in Chat, which uses their own Gmail.</p>
+    <div class="row">
+      <a class="button" href="${esc(view.playgroundUrl)}">Open playground</a>
+      <a class="button quiet" href="${esc(view.debugUrl)}">Open debug</a>
+    </div>
+  </section>`;
 }
 
 function preferencesHtml(view: HomeView): string {
@@ -380,9 +449,7 @@ function googleSetupHtml(view: HomeView): string {
   const saved = view.googleClient === "page"
     ? `<p class="hint">An app id is saved on this computer. Saving again replaces it. The secret stays on this computer.</p>`
     : `<p class="hint">Google will not let Poe register itself. Paste the app id here once for this Poe.</p>`;
-  return `<details>
-    <summary>One-time setup</summary>
-    <form id="google-client">
+  return `<form id="google-client">
       ${saved}
       <p class="hint">Redirect <code>${esc(view.callbackUrl)}</code></p>
       <label for="google-client-id">Google app id</label>
@@ -391,16 +458,16 @@ function googleSetupHtml(view: HomeView): string {
       <input id="google-client-secret" name="clientSecret" type="password" autocomplete="off" maxlength="256" />
       <div class="row"><button type="submit">Save app id</button></div>
       <p class="status" id="google-client-status"></p>
-    </form>
-  </details>`;
+    </form>`;
 }
 
-function settingsScript(): string {
+function settingsScript(screen: HomeScreen): string {
+  const done = screen === "admin" ? "admin?notice=" : "settings?notice=";
   return `bind("#google-client", "google-client", (form) => ({
       clientId: form.clientId.value,
       clientSecret: form.clientSecret.value,
     }), () => {
-      location.href = base + "settings?notice=" + encodeURIComponent("App id saved.");
+      location.href = base + ${JSON.stringify(done)} + encodeURIComponent("App id saved.");
     });
 
     document.querySelectorAll("[data-connect]").forEach((button) => {

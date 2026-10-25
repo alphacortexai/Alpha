@@ -4,6 +4,7 @@ import * as z from "zod/v4";
 import {
   clearSessionCookie,
   getUser,
+  isOwnerUser,
   sessionCookie,
   signIn,
   signUp,
@@ -14,7 +15,7 @@ import {
 import { startPoeDoor, stopPoeDoor } from "../lib/door.js";
 import { homePage, type HomeScreen, type HomeService } from "../lib/home-page.js";
 import { CONNECTABLE_SERVICES, UPCOMING_SERVICES } from "../lib/services.js";
-import { debugViewUrl, publicBaseFromRequest } from "../lib/site.js";
+import { debugViewUrl, playgroundViewUrl, publicBaseFromRequest } from "../lib/site.js";
 import { beginConnect, connectedServiceIds, disconnectService, finishConnect, googleClientSource, saveAppGoogleClient } from "../lib/user-oauth.js";
 
 const pageQuery = z.object({
@@ -94,6 +95,11 @@ export default defineChannel({
       querySchema: pageQuery,
       handler: async (request, { query }) => page(request, "settings", query.notice ?? ""),
     }),
+    GET("/admin", {
+      description: "Owner setup for the Google app, plus links to the trace.",
+      querySchema: pageQuery,
+      handler: async (request, { query }) => page(request, "admin", query.notice ?? ""),
+    }),
     GET("/oauth/callback", {
       description: "Finish Google sign-in started from Settings.",
       querySchema: callbackQuery,
@@ -101,8 +107,14 @@ export default defineChannel({
         const user = await userFromRequest(request);
         if (!user) return redirectTo(request, "login", "Sign in to Poe again, then use Sign in with Google.");
         if (query.error) {
-          const cancelled = query.error === "access_denied";
-          return redirectTo(request, "settings", cancelled ? "Google cancelled the sign-in." : "Google refused the sign-in. Use Sign in with Google again.");
+          const blocked = query.error === "access_denied";
+          return redirectTo(
+            request,
+            "settings",
+            blocked
+              ? "Google blocked this sign-in. Ask the owner to add your Gmail as a test user, then choose Sign in with Google again."
+              : "Google refused the sign-in. Use Sign in with Google again.",
+          );
         }
         if (!query.code || !query.state) return redirectTo(request, "settings", "Google did not finish sign-in. Use Sign in with Google again.");
         const done = await finishConnect(user.id, query.state, query.code);
@@ -151,6 +163,7 @@ export default defineChannel({
       handler: async (request, { body }) => {
         const user = await requireUser(request);
         if (user instanceof Response) return user;
+        if (!(await isOwnerUser(user.id))) return json({ ok: false, error: "The owner of this Poe saves the Google app." }, 403);
         const result = await saveAppGoogleClient(body.clientId, body.clientSecret ?? "");
         if (!result.ok) return json({ ok: false, error: result.error }, 400);
         return json({ ok: true });
@@ -209,12 +222,13 @@ export default defineChannel({
           }),
         ]);
         const urls = sessionUrls(request, session.id);
+        const trace = (await isOwnerUser(fresh.id)) ? urls.playgroundUrl : undefined;
         if (outcome.status === "timeout") {
           return json({
             ok: true,
-            text: "Poe is still working. Open the trace to follow this turn.",
+            text: "Poe is still working.",
             sessionId: session.id,
-            playgroundUrl: urls.playgroundUrl,
+            playgroundUrl: trace,
           });
         }
         if (outcome.status === "error") {
@@ -222,14 +236,14 @@ export default defineChannel({
             ok: false,
             error: outcome.errorMessage ?? "Poe could not finish that turn.",
             sessionId: session.id,
-            playgroundUrl: urls.playgroundUrl,
+            playgroundUrl: trace,
           }, 502);
         }
         return json({
           ok: true,
           text: outcome.result ?? "",
           sessionId: session.id,
-          playgroundUrl: urls.playgroundUrl,
+          playgroundUrl: trace,
         });
       },
     }),
@@ -263,8 +277,11 @@ async function page(request: Request, screen: HomeScreen, notice: string): Promi
   if (user && (screen === "landing" || screen === "register" || screen === "login")) {
     return redirectTo(request, "chat");
   }
-  if (!user && (screen === "chat" || screen === "settings")) {
+  if (!user && (screen === "chat" || screen === "settings" || screen === "admin")) {
     return redirectTo(request, "login");
+  }
+  if (user && screen === "admin" && !(await isOwnerUser(user.id))) {
+    return redirectTo(request, "chat");
   }
   return html(await renderHome(request, screen, notice, user));
 }
@@ -294,6 +311,7 @@ async function renderHome(
     base: pageBase(request),
     callbackUrl: callbackUrl(request),
     debugUrl: debugViewUrl(request),
+    playgroundUrl: playgroundViewUrl(request),
     notice: notice.replace(/[\r\n]/g, " ").slice(0, 400),
     googleClient: await googleClientSource(),
     screen,
@@ -303,6 +321,7 @@ async function renderHome(
           displayName: user.displayName,
           timezone: user.timezone,
           notes: user.notes,
+          owner: await isOwnerUser(user.id),
         }
       : null,
     services,
