@@ -11,6 +11,4 @@ export default defineAgent({
       { id: "fast", value: "true" },
     ],
   },
-  // Inbound interface text is untrusted. The sandbox keeps shell off the host secrets.
-  local: { sandbox: true },
 });
