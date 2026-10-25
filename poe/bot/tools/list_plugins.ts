@@ -2,6 +2,8 @@ import { defineTool } from "@grok/agent-sdk/tools";
 
 import { IDENTITY } from "../lib/identity.js";
 import { connectionMatches, INTERFACES, interfaceForConnection } from "../lib/interfaces.js";
+import { connectableService } from "../lib/services.js";
+import { userHasService } from "../lib/user-oauth.js";
 
 export default defineTool({
   description:
@@ -25,14 +27,27 @@ export default defineTool({
       const matched = interfaceForConnection(name);
       servers.push({ name, interfaceId: matched?.id ?? null, tools });
     }
-    const interfaces = INTERFACES.map((spec) => ({
-      id: spec.id,
-      label: spec.label,
-      subagent: spec.subagent,
-      externalEffect: spec.externalEffect,
-      connectionFile: spec.connectionFile,
-      connected: names.some((name) => connectionMatches(name, spec.aliases)),
-    }));
+    const principal =
+      ctx.session.auth?.authenticator === "poe-account" ? ctx.session.auth.principalId : "";
+    const interfaces = [];
+    for (const spec of INTERFACES) {
+      const personal = connectableService(spec.id);
+      const live = names.some((name) => connectionMatches(name, spec.aliases));
+      const connected = personal
+        ? principal !== "" && live && (await userHasService(principal, spec.id))
+        : live;
+      interfaces.push({
+        id: spec.id,
+        label: spec.label,
+        subagent: spec.subagent,
+        externalEffect: spec.externalEffect,
+        connectionFile: spec.connectionFile,
+        connected,
+        howToConnect: personal
+          ? "Sign in on the Poe home page and use Connect. Each person has their own account."
+          : "Not available from the home page yet.",
+      });
+    }
     return {
       identity: { name: IDENTITY.displayName, version: IDENTITY.identityVersion },
       interfaces,

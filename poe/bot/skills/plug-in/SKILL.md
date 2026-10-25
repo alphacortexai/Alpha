@@ -8,23 +8,38 @@ description: >-
 
 # Plug an interface into Poe
 
-Poe discovers MCP servers from `bot/mcp-connections/*.ts`. The filename is the server name. After a restart, `list_plugins` shows the server and marks a known interface connected when the filename matches it.
+People connect Gmail and Google Calendar from the Poe home page (`/v1/channels/home`) after they sign up. Each person gets their own token. Poe's soul stays the same; name, timezone, and notes are preferences on top.
 
-## Named interfaces
+The home page lists WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins without a Connect button. Those are not connected. Do not tell someone they are.
 
-| Interface | File |
+## On the page now
+
+| Service | What Connect does |
 | --- | --- |
-| Gmail | `bot/mcp-connections/gmail.ts` |
+| Gmail | Read, draft, and send. Sending still waits for approval. |
+| Google Calendar | Check availability and manage events. Changes still wait for approval. |
+
+Google sign-in starts in the browser from the Connect button. Google does not allow Poe to register itself, so save a Google OAuth client ID on the home page once (or set `POE_GOOGLE_CLIENT_ID` and, when the client has one, `POE_GOOGLE_CLIENT_SECRET` in the environment). Register the redirect URL printed on the page. Do not put those values in a command argument.
+
+Tokens live under `.poe-accounts/` on this machine, mode 0600. They are not in git and they are not shared between accounts.
+
+## Files Poe already has
+
+`bot/mcp-connections/gmail.ts` and `bot/mcp-connections/google-calendar.ts` attach those servers per signed-in person. A turn with no Poe account skips them. Adding `oauth: true` would share one mailbox with every account, so do not switch them to that.
+
+## Not on the page yet
+
+| Interface | File, when a real server exists |
+| --- | --- |
 | WhatsApp | `bot/mcp-connections/whatsapp.ts` |
 | Messenger | `bot/mcp-connections/messenger.ts` |
 | Facebook | `bot/mcp-connections/facebook.ts` |
 | Instagram | `bot/mcp-connections/instagram.ts` |
 | X | `bot/mcp-connections/x.ts` |
 | Google calls | `bot/mcp-connections/google-calls.ts` |
-| Google Calendar | `bot/mcp-connections/google-calendar.ts` |
 | Google Docs | `bot/mcp-connections/google-docs.ts` |
 
-Any other filename stays unassigned and is handled by the `plugins` subagent.
+Any other filename is handled by the `plugins` subagent. Do not invent a Connect button for a URL that is not in the catalog.
 
 ## Remote MCP
 
@@ -56,7 +71,7 @@ export default defineConnection({
 });
 ```
 
-Connect Gmail, Calendar, Docs, and the other products in the Cursor MCP dashboard. Poe routes those tools by the specialist table. Tokens stay in the Cursor account.
+Name the file `account.ts`, never `cursor.ts`. Tokens for that path stay in the Cursor account and are one host login, not a Poe signup.
 
 ## Inbound events
 

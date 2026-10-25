@@ -12,7 +12,15 @@ npx @grok/agent-sdk validate --dir .
 npx @grok/agent-sdk dev
 ```
 
-The playground is the live session view. The local debug console is [http://127.0.0.1:3000/v1/channels/debug/view](http://127.0.0.1:3000/v1/channels/debug/view). It lists sessions and shows each subagent with the tools underneath it.
+The playground is the live session view. The home page is where people sign up, set preferences, and connect Gmail or Calendar: [http://127.0.0.1:3000/poe/v1/channels/home](http://127.0.0.1:3000/poe/v1/channels/home). If `dev` prints a playground URL without `/poe`, drop that segment. Restart `dev` after pulling this change. The local debug console is [http://127.0.0.1:3000/poe/v1/channels/debug/view](http://127.0.0.1:3000/poe/v1/channels/debug/view).
+
+## Accounts
+
+Anyone can create an account on that page. Poe's soul stays the default. Display name, timezone, and notes are stored for that person and added on top. Passwords are hashed. The session cookie is `HttpOnly` and `SameSite=Lax`.
+
+Connect opens Google in the browser for that signed-in person only. Google does not let Poe register an OAuth client by itself, so the page asks once for a Google client ID. Gmail can read, draft, and send. Calendar can check availability and manage events. Sends and calendar changes still wait for approval. WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins are listed and marked not available yet.
+
+Account files stay in `poe/.poe-accounts/` and are not committed. On Cursor-managed hosting a custom page cannot return HTML to the browser, so this screen is for local `dev` or a supervised `serve`.
 
 ## Specialists
 
@@ -28,9 +36,7 @@ The playground is the live session view. The local debug console is [http://127.
 
 ## Plug in an MCP server
 
-Add `bot/mcp-connections/<name>.ts`, then restart. Known filenames (`gmail.ts`, `whatsapp.ts`, `google-calendar.ts`, and the others in `bot/skills/plug-in/SKILL.md`) light up that interface in `list_plugins`. Any other file is picked up by the `plugins` specialist.
-
-Cursor account connectors (dashboard MCP, including whatever Google or chat products you have authorized) go in `bot/mcp-connections/account.ts`. That file needs `npx @grok/agent-sdk login` or the host will not start. The snippet is in the plug-in skill.
+Gmail and Google Calendar are connected from the home page, one account per person. The other named interfaces in `bot/skills/plug-in/SKILL.md` are not connected yet. A new API gets a catalog entry and a Connect button. Do not mark it connected before sign-in succeeds.
 
 ## Inbound events
 
