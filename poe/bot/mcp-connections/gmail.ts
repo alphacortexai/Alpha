@@ -1,10 +1,17 @@
 import { defineConnection } from "@grok/agent-sdk/connections";
 
-// Google's hosted Gmail MCP. Sign in once with:
-// npx @grok/agent-sdk mcp oauth gmail --dir .
+import { perUserAuth } from "../lib/per-user-connection.js";
+import { connectableService } from "../lib/services.js";
+
+const service = connectableService("gmail");
+if (!service) throw new Error("Gmail is missing from the service catalog.");
+
+// One mailbox per signed-up person. The home page starts Google sign-in.
+// A shared host login would expose one inbox to every account.
 export default defineConnection({
-  url: "https://gmailmcp.googleapis.com/mcp/v1",
-  oauth: true,
+  description: "The signed-in person's Gmail.",
+  url: service.url,
   advertiseTools: true,
   optional: true,
+  auth: perUserAuth("gmail"),
 });
