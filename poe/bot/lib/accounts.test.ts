@@ -16,7 +16,7 @@ import {
   userFromRequest,
   userIdForSessionAuth,
 } from "./accounts.js";
-import { authorizationHeaders, beginConnect, userHasService } from "./user-oauth.js";
+import { applyGoogleOfflineAccess, authorizationHeaders, beginConnect, userHasService } from "./user-oauth.js";
 
 const dir = await mkdtemp(path.join(tmpdir(), "poe-accounts-"));
 setAccountsDirForTests(dir);
@@ -114,6 +114,35 @@ try {
   const beaHeaders = await authorizationHeaders(other.user.id, "gmail");
   assert.deepEqual(adaHeaders, { Authorization: "Bearer ada-token" });
   assert.equal(beaHeaders, null);
+
+  await writeFile(
+    tokenFile,
+    JSON.stringify({ access_token: "stale-token", token_type: "Bearer", expires_at: Date.now() - 1000 }),
+    { mode: 0o600 },
+  );
+  assert.equal(await userHasService(created.user.id, "gmail"), false);
+  assert.equal(await authorizationHeaders(created.user.id, "gmail"), null);
+  await writeFile(
+    tokenFile,
+    JSON.stringify({
+      access_token: "stale-token",
+      refresh_token: "refresh-token",
+      token_type: "Bearer",
+      expires_at: Date.now() - 1000,
+    }),
+    { mode: 0o600 },
+  );
+  assert.equal(await userHasService(created.user.id, "gmail"), true);
+  await writeFile(
+    tokenFile,
+    JSON.stringify({ access_token: "ada-token", token_type: "Bearer", expires_at: Date.now() + 60 * 60 * 1000 }),
+    { mode: 0o600 },
+  );
+
+  const offline = new URL("https://accounts.google.com/o/oauth2/v2/auth?scope=email");
+  applyGoogleOfflineAccess(offline);
+  assert.equal(offline.searchParams.get("access_type"), "offline");
+  assert.equal(offline.searchParams.get("prompt"), "consent");
 
   const pageView = {
     base: "http://127.0.0.1:3000/poe/v1/channels/home/",

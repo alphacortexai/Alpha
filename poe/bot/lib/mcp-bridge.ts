@@ -1,5 +1,8 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
 /** Local stand-in so the chat session always has servers named gmail and google-calendar. */
 export const MCP_BRIDGE_PORT = 8791;
 export const UNCONNECTED_BEARER = "poe-unconnected";
@@ -28,6 +31,33 @@ export function ensureMcpBridge(): Promise<void> {
     });
   }
   return starting;
+}
+
+/** Tools for one signed-in person. A fresh client so another session's empty list is not reused. */
+export async function listConnectedTools(
+  service: "gmail" | "google-calendar",
+  authorization: string,
+): Promise<Array<{ name: string; description: string }>> {
+  await ensureMcpBridge();
+  const client = new Client({ name: "poe", version: "1.0.0" });
+  const transport = new StreamableHTTPClientTransport(new URL(mcpBridgeUrl(service)), {
+    requestInit: { headers: { Authorization: authorization } },
+  });
+  const timeout = setTimeout(() => {
+    void transport.close();
+  }, 12_000);
+  try {
+    await client.connect(transport);
+    const listed = await client.listTools();
+    return listed.tools.slice(0, 40).map((tool) => ({
+      name: tool.name,
+      description: (tool.description ?? "").slice(0, 160),
+    }));
+  } finally {
+    clearTimeout(timeout);
+    await transport.close().catch(() => undefined);
+    await client.close().catch(() => undefined);
+  }
 }
 
 export async function stopMcpBridge(): Promise<void> {
