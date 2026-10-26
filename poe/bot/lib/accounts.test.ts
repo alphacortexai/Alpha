@@ -7,17 +7,21 @@ import { homePage } from "./home-page.js";
 import {
   clearSessionCookie,
   getUser,
+  isOwnerUser,
   sessionCookie,
   setAccountsDirForTests,
   signIn,
   signUp,
   updatePreferences,
   userFromRequest,
+  userIdForSessionAuth,
 } from "./accounts.js";
 import { authorizationHeaders, beginConnect, userHasService } from "./user-oauth.js";
 
 const dir = await mkdtemp(path.join(tmpdir(), "poe-accounts-"));
 setAccountsDirForTests(dir);
+const previousOwner = process.env.POE_OWNER_EMAIL;
+delete process.env.POE_OWNER_EMAIL;
 
 try {
   const created = await signUp({
@@ -84,6 +88,11 @@ try {
   const other = await signUp({ email: "bea@example.com", password: "bea-password" });
   assert.equal(other.ok, true);
   if (!other.ok) throw new Error("other");
+  assert.equal(await isOwnerUser(created.user.id), true);
+  assert.equal(await isOwnerUser(other.user.id), false);
+  assert.equal(await userIdForSessionAuth({ authenticator: "poe-account", principalId: other.user.id }), other.user.id);
+  assert.equal(await userIdForSessionAuth({ authenticator: "local-dev-strict", principalId: "local" }), created.user.id);
+  assert.equal(await userIdForSessionAuth({ authenticator: "schedule" }), "");
 
   const tokenDir = path.join(dir, "tokens", created.user.id);
   await mkdir(tokenDir, { recursive: true });
@@ -110,6 +119,7 @@ try {
     base: "http://127.0.0.1:3000/poe/v1/channels/home/",
     callbackUrl: "http://127.0.0.1:3000/poe/v1/channels/home/oauth/callback",
     debugUrl: "http://127.0.0.1:3000/poe/v1/channels/debug/view",
+    playgroundUrl: "http://127.0.0.1:3000/poe/playground",
     notice: "",
     googleClient: "missing" as const,
     user: {
@@ -117,6 +127,7 @@ try {
       displayName: "Ada",
       timezone: "UTC",
       notes: `<script>alert(1)</script>`,
+      owner: false,
     },
     services: [
       { id: "gmail", label: "Gmail", summary: "Read mail", state: "ready" as const },
@@ -131,11 +142,22 @@ try {
   assert.match(page, /data-connect="google-calendar"/);
   assert.doesNotMatch(page, /data-connect="whatsapp"/);
   assert.match(page, /Sign in with Google/);
-  assert.match(page, /<details>/);
-  assert.match(page, /One-time setup/);
+  assert.doesNotMatch(page, /Google app id/);
+  assert.doesNotMatch(page, /id="google-client"/);
   assert.match(page, /<base href="http:\/\/127\.0\.0\.1:3000\/poe\/v1\/channels\/home\/" \/>/);
   assert.doesNotMatch(page, /Cloud Console/);
   assert.match(page, /Web browsing is on/);
+
+  const admin = homePage({ ...pageView, screen: "admin", user: { ...pageView.user, owner: true } });
+  assert.match(admin, /id="google-client"/);
+  assert.match(admin, /Google app id/);
+  assert.match(admin, /href="http:\/\/127\.0\.0\.1:3000\/poe\/playground"/);
+  assert.match(admin, /Admin/);
+
+  const chat = homePage({ ...pageView, screen: "chat" });
+  assert.match(chat, /class="composer"/);
+  assert.match(chat, /id="transcript"/);
+  assert.doesNotMatch(chat, /Google app id/);
 
   const landing = homePage({ ...pageView, screen: "landing", user: null });
   assert.match(landing, /href="register"/);
@@ -157,6 +179,8 @@ try {
   assert.match(clearSessionCookie(false), /Max-Age=0/);
   console.log("accounts.test.ts ok");
 } finally {
+  if (previousOwner === undefined) delete process.env.POE_OWNER_EMAIL;
+  else process.env.POE_OWNER_EMAIL = previousOwner;
   setAccountsDirForTests(undefined);
   await rm(dir, { recursive: true, force: true });
 }

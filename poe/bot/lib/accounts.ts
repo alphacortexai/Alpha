@@ -18,6 +18,11 @@ export type PublicUser = {
   createdAt: string;
 };
 
+type SessionAuth = {
+  authenticator?: string;
+  principalId?: string;
+} | null | undefined;
+
 type StoredUser = PublicUser & {
   passwordHash: string;
   passwordSalt: string;
@@ -44,6 +49,10 @@ export function accountsDir(): string {
 
 function usersFile(): string {
   return path.join(accountsDir(), "users.json");
+}
+
+function ownerFile(): string {
+  return path.join(accountsDir(), "owner.json");
 }
 
 export function containsSecret(value: string): boolean {
@@ -77,6 +86,7 @@ export async function signUp(input: {
       createdAt: new Date().toISOString(),
       ...(await hashPassword(input.password)),
     });
+    await claimOwner(user);
     return { ok: true as const, user: publicUser(user) };
   });
 }
@@ -99,6 +109,31 @@ export async function signIn(input: {
   const matches = user !== undefined && derived.length === hash.length && timingSafeEqual(derived, hash);
   if (!matches || !user) return { ok: false, error: "Email or password is wrong." };
   return { ok: true, user: publicUser(user) };
+}
+
+/** The platform owner. `POE_OWNER_EMAIL` wins. Otherwise the earliest account. */
+export async function ownerUserId(): Promise<string | undefined> {
+  return locked(async () => {
+    const users = await readUsers();
+    return resolveOwner(users);
+  });
+}
+
+export async function isOwnerUser(userId: string): Promise<boolean> {
+  if (!userId) return false;
+  return (await ownerUserId()) === userId;
+}
+
+/**
+ * Product chat is a Poe account. The local playground is the owner console,
+ * so it uses the owner's mailbox. Schedules and webhooks stay unsigned.
+ */
+export async function userIdForSessionAuth(auth: SessionAuth): Promise<string> {
+  if (auth?.authenticator === "poe-account" && auth.principalId) return auth.principalId;
+  if (auth?.authenticator === "local-dev" || auth?.authenticator === "local-dev-strict") {
+    return (await ownerUserId()) ?? "";
+  }
+  return "";
 }
 
 export async function getUser(id: string): Promise<PublicUser | undefined> {
@@ -217,6 +252,49 @@ function validTimezone(zone: string): boolean {
   } catch {
     return false;
   }
+}
+
+async function claimOwner(user: StoredUser): Promise<void> {
+  const users = await readUsers();
+  const existing = await readOwnerFile();
+  if (existing && users.some((item) => item.id === existing)) return;
+  const env = ownerEmailFromEnv();
+  if (env && user.email !== env) return;
+  await writeOwnerFile(user.id);
+}
+
+async function resolveOwner(users: StoredUser[]): Promise<string | undefined> {
+  const env = ownerEmailFromEnv();
+  if (env) {
+    const match = users.find((user) => user.email === env);
+    if (!match) return undefined;
+    await writeOwnerFile(match.id);
+    return match.id;
+  }
+  const saved = await readOwnerFile();
+  if (saved && users.some((user) => user.id === saved)) return saved;
+  const earliest = [...users].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+  if (!earliest) return undefined;
+  await writeOwnerFile(earliest.id);
+  return earliest.id;
+}
+
+function ownerEmailFromEnv(): string | undefined {
+  const email = process.env.POE_OWNER_EMAIL?.trim().toLowerCase();
+  return email || undefined;
+}
+
+async function readOwnerFile(): Promise<string | undefined> {
+  try {
+    const parsed = JSON.parse(await readFile(ownerFile(), "utf8")) as { userId?: unknown };
+    return typeof parsed.userId === "string" ? parsed.userId : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function writeOwnerFile(userId: string): Promise<void> {
+  await writePrivate(ownerFile(), JSON.stringify({ userId }));
 }
 
 async function readUsers(): Promise<StoredUser[]> {

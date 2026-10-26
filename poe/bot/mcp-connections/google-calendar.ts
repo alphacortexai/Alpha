@@ -1,15 +1,10 @@
 import { defineConnection } from "@grok/agent-sdk/connections";
 
+import { mcpBridgeUrl } from "../lib/mcp-bridge.js";
 import { perUserAuth } from "../lib/per-user-connection.js";
-import { connectableService } from "../lib/services.js";
-
-const service = connectableService("google-calendar");
-if (!service) throw new Error("Google Calendar is missing from the service catalog.");
 
 export default defineConnection({
-  description: "The signed-in person's Google Calendar.",
-  url: service.url,
-  advertiseTools: true,
-  optional: true,
+  description: "The signed-in person's Google Calendar. Call this MCP server by the name google-calendar.",
+  url: mcpBridgeUrl("google-calendar"),
   auth: perUserAuth("google-calendar"),
 });

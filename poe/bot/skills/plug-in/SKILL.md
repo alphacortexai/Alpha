@@ -8,7 +8,7 @@ description: >-
 
 # Plug an interface into Poe
 
-People open http://127.0.0.1:8080/ (the line Poe prints). The same pages live on `/v1/channels/home`: landing, register, login, chat, and settings. Create an account, then open Settings and choose Sign in with Google for Gmail or Calendar. Each person gets their own token. Poe's soul stays the same; name, timezone, and notes are preferences on top.
+People open http://127.0.0.1:8080/ (the line Poe prints). They create an account and use Chat. Each person connects Gmail or Calendar from Settings with Sign in with Google. The owner, the first account or `POE_OWNER_EMAIL`, saves the Google app id on Admin. The playground is that owner's trace and uses the owner's mailbox. Poe's soul stays the same; name, timezone, and notes are preferences on top.
 
 Web browsing is already on through `browse_web`, plus the harness tools `webSearch` and `webFetch`. There is no web connection file to add.
 
@@ -23,13 +23,13 @@ On Cursor-managed hosting the custom channel returns an empty 202. These pages a
 | Gmail | Read, draft, and send. Sending still waits for approval. |
 | Google Calendar | Check availability and manage events. Changes still wait for approval. |
 
-Sign in with Google opens Google's account chooser when this Poe already has an app id. Save that id in Settings under One-time setup, or set `POE_GOOGLE_CLIENT_ID` and, when the app has one, `POE_GOOGLE_CLIENT_SECRET` in the environment. Google will not let Poe register itself. Keep those values out of command arguments. The redirect address is inside One-time setup.
+Sign in with Google opens Google's account chooser when this Poe already has an app id. The owner saves that id on Admin, or sets `POE_GOOGLE_CLIENT_ID` and, when the app has one, `POE_GOOGLE_CLIENT_SECRET` in the environment. Google will not let Poe register itself. Keep those values out of command arguments. The redirect address is on Admin. While the Google app is in Testing, each Gmail address has to be a test user.
 
 Tokens live under `.poe-accounts/` on this machine, mode 0600. They are not in git and they are not shared between accounts.
 
 ## Files Poe already has
 
-`bot/mcp-connections/gmail.ts` and `bot/mcp-connections/google-calendar.ts` attach those servers per signed-in person. A turn with no Poe account skips them. Adding `oauth: true` would share one mailbox with every account, so do not switch them to that.
+`bot/mcp-connections/gmail.ts` and `bot/mcp-connections/google-calendar.ts` mount MCP servers named `gmail` and `google-calendar` for the signed-in person. They stay mounted when that person has not connected, and then the tool list is empty. Do not set `advertiseTools` on those two files: the chat session would lose the server name. Adding `oauth: true` would share one mailbox with every account, so do not switch them to that.
 
 ## Coming later
 

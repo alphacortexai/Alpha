@@ -1,5 +1,6 @@
 import { defineTool } from "@grok/agent-sdk/tools";
 
+import { userIdForSessionAuth } from "../lib/accounts.js";
 import { IDENTITY } from "../lib/identity.js";
 import { connectionMatches, INTERFACES, interfaceForConnection } from "../lib/interfaces.js";
 import { connectableService } from "../lib/services.js";
@@ -27,8 +28,7 @@ export default defineTool({
       const matched = interfaceForConnection(name);
       servers.push({ name, interfaceId: matched?.id ?? null, tools });
     }
-    const principal =
-      ctx.session.auth?.authenticator === "poe-account" ? ctx.session.auth.principalId : "";
+    const principal = await userIdForSessionAuth(ctx.session.auth);
     const interfaces = [];
     for (const spec of INTERFACES) {
       const personal = connectableService(spec.id);
@@ -44,7 +44,7 @@ export default defineTool({
         connectionFile: spec.connectionFile,
         connected,
         howToConnect: personal
-          ? "Open Settings and choose Sign in with Google. Each person has their own account."
+          ? `Open Settings and choose Sign in with Google. Call the MCP server named ${spec.id}. Each person has their own account.`
           : "Not available from Settings yet.",
       });
     }

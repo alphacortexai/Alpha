@@ -1,17 +1,12 @@
 import { defineConnection } from "@grok/agent-sdk/connections";
 
+import { mcpBridgeUrl } from "../lib/mcp-bridge.js";
 import { perUserAuth } from "../lib/per-user-connection.js";
-import { connectableService } from "../lib/services.js";
 
-const service = connectableService("gmail");
-if (!service) throw new Error("Gmail is missing from the service catalog.");
-
-// One mailbox per signed-up person. The home page starts Google sign-in.
-// A shared host login would expose one inbox to every account.
+// The session sees a server named gmail. The bridge forwards to Google with
+// this person's token. A shared host login would expose one inbox to every account.
 export default defineConnection({
-  description: "The signed-in person's Gmail.",
-  url: service.url,
-  advertiseTools: true,
-  optional: true,
+  description: "The signed-in person's Gmail. Call this MCP server by the name gmail.",
+  url: mcpBridgeUrl("gmail"),
   auth: perUserAuth("gmail"),
 });

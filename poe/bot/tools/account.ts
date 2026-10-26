@@ -1,6 +1,6 @@
 import { defineTool } from "@grok/agent-sdk/tools";
 
-import { getUser } from "../lib/accounts.js";
+import { getUser, userIdForSessionAuth } from "../lib/accounts.js";
 import { CONNECTABLE_SERVICES } from "../lib/services.js";
 import { userHasService } from "../lib/user-oauth.js";
 
@@ -9,11 +9,9 @@ export default defineTool({
     "Read the signed-in person's display name, timezone, notes, and connected services. Preferences sit on top of Poe's soul. Returns nothing private from another person.",
   effect: "read",
   async execute(_input, ctx) {
-    const auth = ctx.session.auth;
-    if (auth?.authenticator !== "poe-account" || !auth.principalId) {
-      return { signedIn: false, connected: [] as string[] };
-    }
-    const user = await getUser(auth.principalId);
+    const userId = await userIdForSessionAuth(ctx.session.auth);
+    if (!userId) return { signedIn: false, connected: [] as string[] };
+    const user = await getUser(userId);
     if (!user) return { signedIn: false, connected: [] as string[] };
     const connected: string[] = [];
     for (const service of CONNECTABLE_SERVICES) {

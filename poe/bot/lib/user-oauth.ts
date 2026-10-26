@@ -64,7 +64,7 @@ export async function disconnectService(userId: string, serviceId: string): Prom
 
 /**
  * Bearer header for this person's connection. Missing, expired, or another
- * person's token returns null so the optional connection is skipped.
+ * person's token returns null. The mailbox bridge then answers with an empty tool list.
  */
 export function authorizationHeaders(
   userId: string,

@@ -30,6 +30,7 @@ assert.equal(publicBaseFromRequest(registerPath), "http://127.0.0.1:3010/poe/v1/
 
 assert.equal(doorSuffix("/"), "");
 assert.equal(doorSuffix("/register"), "register");
+assert.equal(doorSuffix("/admin"), "admin");
 assert.equal(doorSuffix("/oauth/callback"), "oauth/callback");
 assert.equal(doorSuffix("/../debug/view"), undefined);
 assert.equal(doorSuffix("/register/../settings"), undefined);
