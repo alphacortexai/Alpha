@@ -132,7 +132,7 @@ function oneReply(message: unknown): Record<string, unknown> | undefined {
       jsonrpc: "2.0",
       id: record.id,
       result: {
-        content: [{ type: "text", text: "This person has not connected this account. They can use Sign in with Google in Settings." }],
+        content: [{ type: "text", text: "This person has not connected this account. They can use Sign in with Google on the left side of Chat." }],
         isError: true,
       },
     };

@@ -8,22 +8,22 @@ description: >-
 
 # Plug an interface into Poe
 
-People open http://127.0.0.1:8080/ (the line Poe prints). They create an account and use Chat. Each person connects Gmail or Calendar from Settings with Sign in with Google. The owner, the first account or `POE_OWNER_EMAIL`, saves the Google app id on Admin. The playground is that owner's trace and uses the owner's mailbox. Poe's soul stays the same; name, timezone, and notes are preferences on top.
+People open http://127.0.0.1:8080/ (the line Poe prints). They create an account and use Chat. The left side of that chat is where each person sets preferences and connects Gmail or Calendar with Sign in with Google. The owner, the first account or `POE_OWNER_EMAIL`, saves the Google app id in that same column under Admin. The playground is that owner's trace and uses the owner's mailbox. Poe's soul stays the same; name, timezone, and notes are preferences on top.
 
 Web browsing is already on through `browse_web`, plus the harness tools `webSearch` and `webFetch`. There is no web connection file to add.
 
-WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins are listed under Coming later. They are not available from Settings yet.
+WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins are listed under Coming later. They are not available from the left side of Chat yet.
 
 On Cursor-managed hosting the custom channel returns an empty 202. These pages are for local dev and serve.
 
-## On Settings now
+## On the left of Chat
 
 | Service | What Sign in with Google does |
 | --- | --- |
 | Gmail | Read, draft, and send. Sending still waits for approval. |
 | Google Calendar | Check availability and manage events. Changes still wait for approval. |
 
-Sign in with Google opens Google's account chooser when this Poe already has an app id. The owner saves that id on Admin, or sets `POE_GOOGLE_CLIENT_ID` and, when the app has one, `POE_GOOGLE_CLIENT_SECRET` in the environment. Google will not let Poe register itself. Keep those values out of command arguments. The redirect address is on Admin. While the Google app is in Testing, each Gmail address has to be a test user.
+Sign in with Google opens Google's account chooser when this Poe already has an app id. The owner saves that id under Admin on the left side of Chat, or sets `POE_GOOGLE_CLIENT_ID` and, when the app has one, `POE_GOOGLE_CLIENT_SECRET` in the environment. Google will not let Poe register itself. Keep those values out of command arguments. The redirect address is shown next to the app id. While the Google app is in Testing, each Gmail address has to be a test user.
 
 Tokens live under `.poe-accounts/` on this machine, mode 0600. They are not in git and they are not shared between accounts.
 

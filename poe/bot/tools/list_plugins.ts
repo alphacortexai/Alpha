@@ -61,8 +61,8 @@ export default defineTool({
         connectionFile: spec.connectionFile,
         connected,
         howToConnect: personal
-          ? `Open Settings and choose Sign in with Google. Call the MCP server named ${spec.id}. Each person has their own account.`
-          : "Not available from Settings yet.",
+          ? `On the left side of Chat, choose Sign in with Google. Call the MCP server named ${spec.id}. Each person has their own account.`
+          : "Not available from the left side of Chat yet.",
       });
     }
     return {

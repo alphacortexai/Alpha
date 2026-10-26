@@ -14,7 +14,7 @@ npx @grok/agent-sdk dev
 
 Restart `dev` after pulling this change. Poe prints a short address, [http://127.0.0.1:8080/](http://127.0.0.1:8080/). New people go there, create an account, and use Chat. The same pages are on [http://127.0.0.1:3000/poe/v1/channels/home](http://127.0.0.1:3000/poe/v1/channels/home).
 
-The first account is the owner, unless `POE_OWNER_EMAIL` names someone else. Admin is where that person saves the Google app. The playground, [http://127.0.0.1:3000/poe/playground](http://127.0.0.1:3000/poe/playground), is the owner's trace and uses the owner's Gmail. People stay in Chat, which uses their own Gmail. If `dev` prints a playground URL without `/poe`, drop that segment. Debug is [http://127.0.0.1:3000/poe/v1/channels/debug/view](http://127.0.0.1:3000/poe/v1/channels/debug/view).
+The first account is the owner, unless `POE_OWNER_EMAIL` names someone else. Chat is the product: the conversation is the main column, and the left side is where that person sets preferences, Gmail, and Calendar. The owner also saves the Google app in that column, under Admin. The playground, [http://127.0.0.1:3000/poe/playground](http://127.0.0.1:3000/poe/playground), is the owner's trace and uses the owner's Gmail. People stay in Chat, which uses their own Gmail. If `dev` prints a playground URL without `/poe`, drop that segment. Debug is [http://127.0.0.1:3000/poe/v1/channels/debug/view](http://127.0.0.1:3000/poe/v1/channels/debug/view).
 
 ## Accounts
 
@@ -22,7 +22,7 @@ Anyone can create an account from that address. Poe's soul stays the default. Di
 
 Web browsing is already on through `browse_web`, and the harness also has `webSearch` and `webFetch`. There is no web connection file to add.
 
-Sign in with Google, from Settings, opens Google's account chooser for that person. The owner saves the app id on Admin, or sets `POE_GOOGLE_CLIENT_ID` and `POE_GOOGLE_CLIENT_SECRET`. Google will not let Poe register itself. While the app is in Testing, each Gmail address is added as a test user. Gmail can read, draft, and send. Calendar can check availability and manage events. Sends and calendar changes still wait for approval. WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins are listed under Coming later.
+Sign in with Google, on the left side of Chat, opens Google's account chooser for that person. The owner saves the app id in that same column, or sets `POE_GOOGLE_CLIENT_ID` and `POE_GOOGLE_CLIENT_SECRET`. Google will not let Poe register itself. While the app is in Testing, each Gmail address is added as a test user. Gmail can read, draft, and send. Calendar can check availability and manage events. Sends and calendar changes still wait for approval. WhatsApp, Messenger, Instagram, Facebook, X, Google Docs, Google calls, and other MCP plugins are listed under Coming later.
 
 Account files stay in `poe/.poe-accounts/` and are not committed. On Cursor-managed hosting a custom channel returns an empty 202, so these pages are for local `dev` or a supervised `serve`. Hosted egress stays on the listed domains. Local browsing uses `browse_web`.
 
@@ -40,7 +40,7 @@ Account files stay in `poe/.poe-accounts/` and are not committed. On Cursor-mana
 
 ## Plug in an MCP server
 
-Gmail and Google Calendar use Sign in with Google from Settings, one account per person. The other named interfaces in `bot/skills/plug-in/SKILL.md` are listed under Coming later. A new API gets a catalog entry and a Sign in with Google button when a real server exists. Mark it connected after sign-in succeeds.
+Gmail and Google Calendar use Sign in with Google on the left side of Chat, one account per person. The other named interfaces in `bot/skills/plug-in/SKILL.md` are listed under Coming later. A new API gets a catalog entry and a Sign in with Google button when a real server exists. Mark it connected after sign-in succeeds.
 
 ## Inbound events
 
