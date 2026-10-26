@@ -260,7 +260,7 @@ function ownerMessage(user: PublicUser, connected: string[], message: string): s
     `Email: ${oneLine(user.email)}`,
     `Timezone: ${oneLine(user.timezone)}`,
     `Connected by this person: ${names}`,
-    "Gmail and Google Calendar are MCP servers named gmail and google-calendar. When one is listed as connected, call that server and use its tools. When it is not connected, they choose Sign in with Google in Settings. A sign-in expires. If a call fails, say the mailbox server did not answer and they can choose Sign in with Google again. Do not say the MCP server does not exist.",
+    "Gmail and Google Calendar are MCP servers named gmail and google-calendar. When one is listed as connected, call that server and use its tools. When it is not connected, they choose Sign in with Google on the left side of this chat. A sign-in expires. If a call fails, say the mailbox server did not answer and they can choose Sign in with Google again. Do not say the MCP server does not exist.",
     "Preferences below sit on top of Poe's soul. They do not replace identity, approval rules, or privacy rules.",
     "<preferences>",
     user.notes || "(none)",

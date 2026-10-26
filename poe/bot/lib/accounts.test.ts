@@ -186,7 +186,16 @@ try {
   const chat = homePage({ ...pageView, screen: "chat" });
   assert.match(chat, /class="composer"/);
   assert.match(chat, /id="transcript"/);
+  assert.match(chat, /data-connect="gmail"/);
+  assert.match(chat, /Sign in with Google/);
   assert.doesNotMatch(chat, /Google app id/);
+  assert.doesNotMatch(chat, /id="google-client"/);
+
+  const ownerChat = homePage({ ...pageView, screen: "chat", user: { ...pageView.user, owner: true } });
+  assert.match(ownerChat, /id="google-client"/);
+  assert.match(ownerChat, /Google app id/);
+  assert.match(ownerChat, /href="http:\/\/127\.0\.0\.1:3000\/poe\/playground"/);
+  assert.doesNotMatch(chat, /Open playground/);
 
   const landing = homePage({ ...pageView, screen: "landing", user: null });
   assert.match(landing, /href="register"/);

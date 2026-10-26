@@ -28,7 +28,8 @@ export type HomeView = {
 /** Local product pages. The short door and the channel path both render these. */
 export function homePage(view: HomeView): string {
   const base = view.base.endsWith("/") ? view.base : `${view.base}/`;
-  const signedIn = view.user !== null;
+  const workspace = isWorkspace(view);
+  const openSetup = workspace && view.screen !== "chat";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,88 +39,101 @@ export function homePage(view: HomeView): string {
   <base href="${esc(base)}" />
   <title>Poe</title>
   <style>
-    :root { color-scheme: dark; }
+    :root {
+      color-scheme: dark;
+      --bg: #181818;
+      --raised: #1c1c1c;
+      --input: #141414;
+      --border: #2a2a2a;
+      --border-strong: #3a3a3a;
+      --text: #f0f0f0;
+      --dim: #b8b8b8;
+      --faint: #9a9a9a;
+      --ghost: #666;
+      --accent: #599ce7;
+      --green: #3fa266;
+      --red: #fc6b83;
+      --amber: #f1b467;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; font: 17px/1.5 ui-sans-serif, system-ui, sans-serif; background: #14120e; color: #f5f0e8; }
-    a { color: #e7c27a; }
-    header, main { padding: 20px 24px; }
-    header { border-bottom: 1px solid #2e2a22; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
-    h1 { font-size: 32px; margin: 0; letter-spacing: -0.03em; }
-    h1 a { color: inherit; text-decoration: none; }
-    h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: #a8a29e; margin: 0 0 12px; }
-    p { margin: 0; }
-    nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    nav a, nav button { text-decoration: none; }
-    main { display: grid; gap: 16px; max-width: 880px; }
-    .lede { font-size: 20px; max-width: 38rem; color: #e7e5e4; }
-    .muted { color: #a8a29e; }
-    .banner { background: #2a261c; color: #f3e6c4; border-radius: 12px; padding: 12px 14px; }
-    .banner.bad { background: #3a2424; color: #f6c9c9; }
-    section, .card { background: #1c1914; border: 1px solid #2e2a22; border-radius: 14px; padding: 16px; }
-    label { display: block; margin: 12px 0 4px; color: #e7e5e4; }
-    input, textarea, button, .button { font: inherit; border-radius: 10px; border: 1px solid #4a4338; background: #12100c; color: inherit; padding: 10px 12px; }
-    textarea { min-height: 96px; resize: vertical; width: 100%; }
-    input { width: 100%; }
-    button, .button { display: inline-block; width: auto; cursor: pointer; background: #e7c27a; color: #1c1408; border-color: transparent; font-weight: 650; text-align: center; }
-    button.quiet, .button.quiet { background: transparent; color: #f5f0e8; border-color: #4a4338; }
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
+    a { color: var(--accent); }
+    button, .button { font: inherit; border-radius: 8px; border: 1px solid transparent; background: var(--accent); color: #0c1928; padding: 6px 10px; font-weight: 650; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+    button.quiet, .button.quiet { background: transparent; color: var(--text); border-color: var(--border-strong); }
     button:disabled { opacity: .6; cursor: wait; }
-    .row { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-    .badge { display: inline-block; font-size: 12px; border-radius: 999px; padding: 2px 8px; margin-bottom: 8px; background: #2e2a22; color: #d6d3d1; }
+    input, textarea { font: inherit; width: 100%; color: var(--text); background: var(--input); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; }
+    textarea { min-height: 72px; resize: vertical; }
+    label { display: block; margin: 10px 0 4px; color: var(--dim); }
+    h1 { font-size: 22px; margin: 0 0 8px; letter-spacing: -0.03em; }
+    h1 a { color: inherit; text-decoration: none; }
+    h2 { font-size: 12px; font-weight: 650; color: var(--faint); margin: 18px 0 8px; }
+    p { margin: 0; }
+    .muted { color: var(--faint); }
+    .hint { margin-top: 6px; color: var(--faint); font-size: 12px; }
+    .lede { font-size: 15px; color: var(--dim); max-width: 36rem; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+    .banner { background: #2a2418; color: var(--amber); border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
+    .banner.bad { background: #3a2428; color: var(--red); }
+    .status { color: var(--faint); min-height: 1.1em; margin-top: 6px; font-size: 12px; }
+    .status.bad { color: var(--red); }
+    code { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .guest-main { max-width: 440px; margin: 0 auto; padding: 56px 20px 40px; }
+    .guest-main .row { margin-top: 16px; }
+    body.workspace { height: 100dvh; overflow: hidden; }
+    .app-shell { height: 100%; display: flex; min-height: 0; }
+    .rail { width: 320px; flex: none; display: flex; flex-direction: column; min-height: 0; background: var(--raised); border-right: 1px solid var(--border); }
+    .rail-brand { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px 0; }
+    .rail-brand a { color: inherit; text-decoration: none; font-weight: 650; font-size: 14px; }
+    .rail-scroll { flex: 1; overflow: auto; padding: 8px 14px 28px; }
+    .who { font-size: 14px; font-weight: 650; margin-top: 8px; }
+    .card { border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin: 0 0 8px; }
+    .card h3 { margin: 0 0 4px; font-size: 13px; }
+    .card p { color: var(--dim); font-size: 12px; }
+    .badge { display: inline-block; font-size: 11px; border-radius: 999px; padding: 1px 7px; margin-bottom: 6px; background: #292929; color: var(--dim); }
     .badge.on { background: #1e3a2a; color: #b7d7b0; }
-    .card h3 { margin: 0 0 6px; font-size: 18px; }
-    .card p { color: #d6d3d1; min-height: 48px; }
-    .transcript { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
-    .bubble { border-radius: 16px; padding: 12px 14px; white-space: pre-wrap; line-height: 1.45; }
-    .mine { background: #3a3120; align-self: flex-end; max-width: min(70%, 640px); }
-    .poe { background: #221e18; border: 1px solid #3a3428; align-self: flex-start; max-width: min(78%, 720px); }
-    .poe a { display: inline-block; margin-top: 8px; font-size: 13px; }
-    body[data-screen="chat"] { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    body[data-screen="chat"] header { flex: none; }
-    body[data-screen="chat"] main.chat-shell { flex: 1; max-width: none; width: 100%; min-height: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 0; padding: 0; }
-    .rail { padding: 22px 18px; background: #1c1914; border-right: 1px solid #2e2a22; overflow: auto; }
-    .rail h2 { margin-top: 22px; }
-    .who { font-size: 18px; margin: 4px 0; }
-    .thread { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: #100e0b; }
-    .thread .transcript { flex: 1; padding: 28px 8vw 12px; }
-    .empty { color: #a8a29e; margin: auto; max-width: 28rem; text-align: center; }
-    .composer { display: flex; gap: 8px; align-items: flex-end; padding: 12px 8vw 18px; border-top: 1px solid #2e2a22; background: #14120e; }
-    .composer textarea { min-height: 52px; max-height: 160px; margin: 0; }
-    .chip { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #2e2a22; font-size: 14px; }
-    .status { color: #f0a8a8; min-height: 1.2em; margin-top: 8px; }
-    .hint { margin-top: 8px; color: #a8a29e; font-size: 14px; }
-    details { background: #1c1914; border: 1px solid #2e2a22; border-radius: 14px; padding: 12px 16px; }
-    summary { cursor: pointer; font-weight: 650; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; word-break: break-all; }
-    footer { padding: 8px 24px 24px; color: #78716c; font-size: 13px; }
-    :focus-visible { outline: 2px solid #e7c27a; outline-offset: 2px; }
+    details.later { margin-top: 8px; }
+    details.later summary { cursor: pointer; color: var(--faint); font-size: 12px; font-weight: 650; }
+    details.later .card { margin-top: 8px; }
+    .thread { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
+    .thread-bar { display: none; align-items: center; gap: 8px; min-height: 42px; padding: 6px 12px; border-bottom: 1px solid var(--border); }
+    .thread-bar strong { font-size: 13px; }
+    .thread-notice { margin: 12px 22px 0; }
+    .transcript { flex: 1; overflow: auto; padding: 18px 22px 8px; display: flex; flex-direction: column; }
+    .empty { margin: auto; max-width: 320px; text-align: center; color: var(--faint); }
+    .empty strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 6px; }
+    .msg { width: min(760px, 100%); margin: 0 auto 16px; font-size: 14px; line-height: 1.5; }
+    .msg.user .bubble { background: var(--raised); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; word-break: break-word; }
+    .msg.assistant { margin-bottom: 20px; }
+    .msg.assistant .bubble { padding: 0 2px; white-space: pre-wrap; word-break: break-word; }
+    .msg.assistant a { display: inline-block; margin-top: 8px; font-size: 12px; }
+    .composer { padding: 8px 22px 14px; }
+    .prompt { max-width: 760px; margin: 0 auto; background: var(--raised); border: 1px solid var(--border-strong); border-radius: 12px; display: flex; flex-direction: column; }
+    .prompt:focus-within { border-color: #5c5c5c; }
+    .prompt textarea { border: 0; background: transparent; resize: none; min-height: 44px; max-height: 200px; padding: 10px 12px 2px; border-radius: 12px 12px 0 0; field-sizing: content; }
+    .prompt textarea:focus { outline: none; }
+    .prompt-bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px 8px 12px; }
+    .prompt-bar .hint { margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #setup-close { display: none; }
+    .setup-backdrop { display: none; }
+    .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
     @media (max-width: 800px) {
-      header, main, footer { padding-left: 16px; padding-right: 16px; }
-      header { display: block; }
-      nav { margin-top: 12px; }
-      h1 { font-size: 28px; }
-      .lede { font-size: 18px; }
-      .grid { grid-template-columns: 1fr; }
-      main button, main .button { width: 100%; }
-      body[data-screen="chat"] { height: 100dvh; }
-      body[data-screen="chat"] header, body[data-screen="chat"] main { padding-left: 0; padding-right: 0; }
-      body[data-screen="chat"] header { padding: 12px 16px; }
-      body[data-screen="chat"] main.chat-shell { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
-      .rail { border-right: 0; border-bottom: 1px solid #2e2a22; max-height: 34vh; }
-      .thread .transcript, .composer { padding-left: 16px; padding-right: 16px; }
-      .mine, .poe { max-width: 92%; }
+      .guest-main { padding-top: 28px; }
+      .rail { position: fixed; z-index: 30; top: 0; bottom: 0; left: 0; width: min(100vw, 380px); max-width: 100%; transform: translateX(-105%); transition: transform .18s ease; box-shadow: none; }
+      body.setup-open .rail { transform: none; box-shadow: 8px 0 24px rgba(0, 0, 0, .45); }
+      body.setup-open .setup-backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, .5); z-index: 25; }
+      .thread-bar { display: flex; }
+      #setup-close { display: inline-block; }
+      .transcript, .composer, .thread-notice { padding-left: 12px; padding-right: 12px; }
+      .thread-notice { margin-left: 12px; margin-right: 12px; }
     }
   </style>
 </head>
-<body data-screen="${esc(view.screen)}">
-  <header>
-    <h1><a href="${signedIn ? "chat" : "./"}">Poe</a></h1>
-    ${signedIn ? navHtml(view.screen, view.user?.owner === true) : ""}
-  </header>
-  <main class="${view.screen === "chat" ? "chat-shell" : ""}">
-    ${view.screen === "chat" ? "" : view.notice ? `<div class="banner" id="notice">${esc(view.notice)}</div>` : `<div class="banner" id="notice" hidden></div>`}
-    ${screenHtml(view)}
-  </main>
+<body class="${workspace ? `workspace${openSetup ? " setup-open" : ""}` : "guest"}" data-screen="${esc(view.screen)}">
+  ${workspace ? screenHtml(view) : `<main class="guest-main"><h1><a href="./">Poe</a></h1>${noticeHtml(view)}${screenHtml(view)}</main>`}
   <noscript><p>This page needs JavaScript to create an account and sign in.</p></noscript>
   <script>
     const base = ${JSON.stringify(base).replace(/</g, "\\u003c")};
@@ -193,7 +207,15 @@ export function homePage(view: HomeView): string {
       });
     }
 
-    ${view.screen === "settings" || view.screen === "admin" ? settingsScript(view.screen) : ""}
+    const setupToggle = document.querySelector("#setup-toggle");
+    const setupClose = document.querySelector("#setup-close");
+    const setupBackdrop = document.querySelector("#setup-backdrop");
+    function setSetup(open) { document.body.classList.toggle("setup-open", open); }
+    if (setupToggle) setupToggle.addEventListener("click", () => setSetup(true));
+    if (setupClose) setupClose.addEventListener("click", () => setSetup(false));
+    if (setupBackdrop) setupBackdrop.addEventListener("click", () => setSetup(false));
+
+    ${workspace ? settingsScript(view.screen) : ""}
 
     const chat = document.querySelector("#chat");
     const transcript = document.querySelector("#transcript");
@@ -205,8 +227,8 @@ export function homePage(view: HomeView): string {
         chat.message.value = "";
         const placeholder = transcript.querySelector(".empty");
         if (placeholder) placeholder.remove();
-        addBubble(message, "mine");
-        const pending = addBubble("Poe is working…", "poe");
+        addBubble(message, "user");
+        const pending = addBubble("Poe is working…", "assistant");
         const button = chat.querySelector("button");
         if (button) button.disabled = true;
         try {
@@ -240,10 +262,13 @@ export function homePage(view: HomeView): string {
     }
 
     function addBubble(text, className) {
+      const row = document.createElement("div");
+      row.className = "msg " + className;
       const node = document.createElement("div");
-      node.className = "bubble " + className;
+      node.className = "bubble";
       node.textContent = text;
-      transcript.appendChild(node);
+      row.appendChild(node);
+      transcript.appendChild(row);
       transcript.scrollTop = transcript.scrollHeight;
       return node;
     }
@@ -252,43 +277,35 @@ export function homePage(view: HomeView): string {
 </html>`;
 }
 
+function isWorkspace(view: HomeView): boolean {
+  return view.user !== null && (view.screen === "chat" || view.screen === "settings" || view.screen === "admin");
+}
+
 function screenHtml(view: HomeView): string {
   if (view.screen === "register") return registerHtml();
   if (view.screen === "login") return loginHtml();
-  if (view.screen === "chat") return chatHtml(view);
-  if (view.screen === "settings") return settingsHtml(view);
-  if (view.screen === "admin") return adminHtml(view);
+  if (isWorkspace(view)) return workspaceHtml(view);
   return landingHtml();
 }
 
-function navHtml(screen: HomeScreen, owner: boolean): string {
-  const chat = screen === "chat" ? ` aria-current="page"` : "";
-  const settings = screen === "settings" ? ` aria-current="page"` : "";
-  const admin = screen === "admin" ? ` aria-current="page"` : "";
-  const adminLink = owner ? `<a class="button quiet" href="admin"${admin}>Admin</a>` : "";
-  return `<nav>
-    <a class="button quiet" href="chat"${chat}>Chat</a>
-    <a class="button quiet" href="settings"${settings}>Settings</a>
-    ${adminLink}
-    <button type="button" class="quiet" id="logout">Log out</button>
-  </nav>`;
+function noticeHtml(view: HomeView): string {
+  return view.notice
+    ? `<div class="banner" id="notice">${esc(view.notice)}</div>`
+    : `<div class="banner" id="notice" hidden></div>`;
 }
 
 function landingHtml(): string {
-  return `<section>
-    <p class="lede">Poe is your assistant for mail, calendar, and the web.</p>
-    <p class="muted" style="margin-top:10px">Create an account, then open Chat. Connect your own Gmail from Settings. The person who runs Poe handles the Google app.</p>
+  return `<p class="lede">Poe is your assistant for mail, calendar, and the web.</p>
+    <p class="hint">Create an account. Gmail, Calendar, and your preferences sit on the left of the chat. The person who runs Poe saves the Google app there too.</p>
     <div class="row">
       <a class="button" href="register">Create account</a>
       <a class="button quiet" href="login">Sign in</a>
-    </div>
-  </section>`;
+    </div>`;
 }
 
 function registerHtml(): string {
-  return `<section>
-    <h2>Create an account</h2>
-    <form id="signup">
+  return `<form id="signup">
+      <h2>Create an account</h2>
       <label for="signup-name">Name</label>
       <input id="signup-name" name="displayName" autocomplete="name" maxlength="80" />
       <label for="signup-email">Email</label>
@@ -301,14 +318,12 @@ function registerHtml(): string {
       <div class="row"><button type="submit">Create account</button></div>
       <p class="status" id="signup-status"></p>
     </form>
-    <p class="hint">Already have an account? <a href="login">Sign in</a></p>
-  </section>`;
+    <p class="hint">Already have an account? <a href="login">Sign in</a></p>`;
 }
 
 function loginHtml(): string {
-  return `<section>
-    <h2>Sign in</h2>
-    <form id="login">
+  return `<form id="login">
+      <h2>Sign in</h2>
       <label for="login-email">Email</label>
       <input id="login-email" name="email" type="email" autocomplete="username" required maxlength="200" />
       <label for="login-password">Password</label>
@@ -316,75 +331,60 @@ function loginHtml(): string {
       <div class="row"><button type="submit">Sign in</button></div>
       <p class="status" id="login-status"></p>
     </form>
-    <p class="hint"><a href="register">Create account</a></p>
-  </section>`;
+    <p class="hint"><a href="register">Create account</a></p>`;
 }
 
-function chatHtml(view: HomeView): string {
-  const name = view.user?.displayName ?? "there";
-  const mail = view.services.find((service) => service.id === "gmail");
-  const calendar = view.services.find((service) => service.id === "google-calendar");
-  return `<aside class="rail">
-      <p class="muted">Signed in</p>
-      <p class="who">${esc(name)}</p>
-      <p class="muted">${esc(view.user?.email ?? "")}</p>
-      <h2>On this account</h2>
-      ${chip("Web", "On")}
-      ${chip("Gmail", mail?.state === "connected" ? "Signed in" : "Connect in Settings")}
-      ${chip("Calendar", calendar?.state === "connected" ? "Signed in" : "Connect in Settings")}
-      <div class="row"><a class="button" href="settings">Your accounts</a></div>
-    </aside>
-    <section class="thread">
-      ${view.notice ? `<div class="banner" id="notice">${esc(view.notice)}</div>` : `<div class="banner" id="notice" hidden></div>`}
-      <div class="transcript" id="transcript">
-        <p class="empty">Ask Poe about your mail, your calendar, or a public page. Enter sends. Shift+Enter adds a line.</p>
-      </div>
-      <form id="chat" class="composer">
-        <label class="muted" for="chat-message" style="position:absolute;left:-999px">Message</label>
-        <textarea id="chat-message" name="message" maxlength="8000" placeholder="Message Poe"></textarea>
-        <button type="submit">Send</button>
-      </form>
-    </section>`;
-}
-
-function chip(label: string, value: string): string {
-  return `<div class="chip"><span>${esc(label)}</span><span>${esc(value)}</span></div>`;
-}
-
-function settingsHtml(view: HomeView): string {
+function workspaceHtml(view: HomeView): string {
   const ready = view.services.filter((service) => service.state !== "soon");
   const later = view.services.filter((service) => service.state === "soon");
-  const signedIn = view.user !== null;
-  return `${preferencesHtml(view)}
-    <section>
-      <h2>Services</h2>
-      <div class="grid">
-        ${webCard()}
-        ${ready.map((service) => serviceCard(service, signedIn)).join("")}
+  const owner = view.user?.owner === true;
+  return `<div class="app-shell">
+    <aside class="rail" id="setup">
+      <div class="rail-brand">
+        <a href="chat">Poe</a>
+        <button type="button" class="quiet" id="setup-close">Close</button>
       </div>
-      <p class="status" id="connect-status"></p>
+      <div class="rail-scroll">
+        ${noticeHtml(view)}
+        <p class="who">${esc(view.user?.displayName || "You")}</p>
+        <p class="muted">${esc(view.user?.email ?? "")}</p>
+        <div class="row"><button type="button" class="quiet" id="logout">Log out</button></div>
+        ${preferencesHtml(view)}
+        <section id="services">
+          <h2>Accounts</h2>
+          ${webCard()}
+          ${ready.map((service) => serviceCard(service)).join("")}
+          <p class="status" id="connect-status"></p>
+        </section>
+        ${later.length > 0 ? `<details class="later">
+          <summary>Coming later</summary>
+          ${later.map((service) => soonCard(service)).join("")}
+        </details>` : ""}
+        ${owner ? ownerHtml(view) : ""}
+      </div>
+    </aside>
+    <div class="setup-backdrop" id="setup-backdrop"></div>
+    <section class="thread">
+      <div class="thread-bar">
+        <button type="button" class="quiet" id="setup-toggle" aria-controls="setup">Setup</button>
+        <strong>Poe</strong>
+      </div>
+      ${view.notice ? `<div class="banner thread-notice">${esc(view.notice)}</div>` : ""}
+      <div class="transcript" id="transcript">
+        <p class="empty"><strong>Poe</strong>Ask about your mail, your calendar, or a public page.</p>
+      </div>
+      <form id="chat" class="composer">
+        <div class="prompt">
+          <label class="sr" for="chat-message">Message</label>
+          <textarea id="chat-message" name="message" maxlength="8000" placeholder="Message Poe"></textarea>
+          <div class="prompt-bar">
+            <p class="hint">Enter to send. Shift+Enter for a new line.</p>
+            <button type="submit">Send</button>
+          </div>
+        </div>
+      </form>
     </section>
-    <section>
-      <h2>Coming later</h2>
-      <div class="grid">
-        ${later.map((service) => soonCard(service)).join("")}
-      </div>
-    </section>`;
-}
-
-function adminHtml(view: HomeView): string {
-  return `<section>
-    <h2>Owner</h2>
-    <p>People use this Poe from the address you gave them. They create an account, talk in Chat, and connect their own Gmail from Settings.</p>
-    <p class="hint">You save the Google app here, once. While that app is in Testing, add each person's Gmail address as a test user.</p>
-    ${googleSetupHtml(view)}
-    <h2 style="margin-top:22px">Your trace</h2>
-    <p class="hint">The playground is your view of turns. It uses your Gmail, because you are the owner. New people stay in Chat, which uses their own Gmail.</p>
-    <div class="row">
-      <a class="button" href="${esc(view.playgroundUrl)}">Open playground</a>
-      <a class="button quiet" href="${esc(view.debugUrl)}">Open debug</a>
-    </div>
-  </section>`;
+  </div>`;
 }
 
 function preferencesHtml(view: HomeView): string {
@@ -392,7 +392,6 @@ function preferencesHtml(view: HomeView): string {
   if (!user) return "";
   return `<section>
     <h2>Preferences</h2>
-    <p class="muted">Signed in as ${esc(user.email)}. Your name, timezone, and notes sit on top of Poe's soul.</p>
     <form id="preferences">
       <label for="pref-name">Name</label>
       <input id="pref-name" name="displayName" value="${esc(user.displayName)}" required maxlength="80" />
@@ -414,7 +413,7 @@ function webCard(): string {
   </article>`;
 }
 
-function serviceCard(service: HomeService, signedIn: boolean): string {
+function serviceCard(service: HomeService): string {
   if (service.state === "connected") {
     return `<article class="card">
       <span class="badge on">Signed in</span>
@@ -423,14 +422,11 @@ function serviceCard(service: HomeService, signedIn: boolean): string {
       <div class="row"><button type="button" class="quiet" data-disconnect="${esc(service.id)}">Disconnect</button></div>
     </article>`;
   }
-  const action = signedIn
-    ? `<div class="row"><button type="button" data-connect="${esc(service.id)}">Sign in with Google</button></div>`
-    : `<p class="hint">Create an account, then come back to Settings.</p>`;
   return `<article class="card">
     <span class="badge">Ready</span>
     <h3>${esc(service.label)}</h3>
     <p>${esc(service.summary)}</p>
-    ${action}
+    <div class="row"><button type="button" data-connect="${esc(service.id)}">Sign in with Google</button></div>
   </article>`;
 }
 
@@ -440,6 +436,19 @@ function soonCard(service: HomeService): string {
     <h3>${esc(service.label)}</h3>
     <p>${esc(service.summary)}</p>
   </article>`;
+}
+
+function ownerHtml(view: HomeView): string {
+  return `<section id="owner">
+    <h2>Admin</h2>
+    <p class="hint">Save the Google app once for this Poe. While that app is in Testing, add each person's Gmail as a test user. People connect their own account with Sign in with Google.</p>
+    ${googleSetupHtml(view)}
+    <p class="hint">The playground is your trace. It uses your Gmail. Other people stay in this chat, which uses theirs.</p>
+    <div class="row">
+      <a class="button quiet" href="${esc(view.playgroundUrl)}">Open playground</a>
+      <a class="button quiet" href="${esc(view.debugUrl)}">Open debug</a>
+    </div>
+  </section>`;
 }
 
 function googleSetupHtml(view: HomeView): string {
@@ -462,7 +471,7 @@ function googleSetupHtml(view: HomeView): string {
 }
 
 function settingsScript(screen: HomeScreen): string {
-  const done = screen === "admin" ? "admin?notice=" : "settings?notice=";
+  const done = `${screen}?notice=`;
   return `bind("#google-client", "google-client", (form) => ({
       clientId: form.clientId.value,
       clientSecret: form.clientSecret.value,
@@ -476,13 +485,14 @@ function settingsScript(screen: HomeScreen): string {
         try {
           const data = await post("connect", { service: button.getAttribute("data-connect") });
           if (data.url) location.href = data.url;
-          else location.href = base + "settings?notice=" + encodeURIComponent("Already signed in.");
+          else location.href = base + ${JSON.stringify(done)} + encodeURIComponent("Already signed in.");
         } catch (error) {
           const message = error instanceof Error ? error.message : "Sign in with Google did not start.";
+          setSetup(true);
           show("#notice", message, true);
           show("#connect-status", message, true);
           const banner = document.querySelector("#notice");
-          if (banner) banner.scrollIntoView({ block: "center" });
+          if (banner) banner.scrollIntoView({ block: "nearest" });
           button.disabled = false;
         }
       });
@@ -493,8 +503,9 @@ function settingsScript(screen: HomeScreen): string {
         button.disabled = true;
         try {
           await post("disconnect", { service: button.getAttribute("data-disconnect") });
-          location.href = base + "settings?notice=" + encodeURIComponent("Disconnected.");
+          location.href = base + ${JSON.stringify(done)} + encodeURIComponent("Disconnected.");
         } catch (error) {
+          setSetup(true);
           show("#notice", error instanceof Error ? error.message : "Disconnect failed.", true);
           button.disabled = false;
         }

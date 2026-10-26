@@ -68,6 +68,25 @@ export async function stopMcpBridge(): Promise<void> {
   await new Promise<void>((resolve) => current.close(() => resolve()));
 }
 
+/**
+ * Google's Gmail MCP answers an unusable token with HTTP 401 and a JSON-RPC
+ * body. The MCP client treats any non-2xx status as a transport failure and
+ * never reads that body, so a tools list looks like a broken connection.
+ * A JSON-RPC body is returned as HTTP 200 so the client can use it.
+ */
+export function relayMailboxResponse(status: number, raw: string): { status: number; body: string } {
+  if (status !== 401) return { status, body: raw };
+  try {
+    const parsed = JSON.parse(raw) as { jsonrpc?: unknown; result?: unknown; error?: unknown };
+    if (parsed.jsonrpc === "2.0" && (parsed.result !== undefined || parsed.error !== undefined)) {
+      return { status: 200, body: raw };
+    }
+  } catch {
+    // Not JSON-RPC. Keep the rejection.
+  }
+  return { status: 401, body: raw || "Google rejected the Gmail sign-in." };
+}
+
 /** JSON-RPC answer when this person has not connected the mailbox. */
 export function answerUnconnected(raw: string): { status: number; body: string } {
   let parsed: unknown;
@@ -113,7 +132,7 @@ function oneReply(message: unknown): Record<string, unknown> | undefined {
       jsonrpc: "2.0",
       id: record.id,
       result: {
-        content: [{ type: "text", text: "This person has not connected this account. They can use Sign in with Google in Settings." }],
+        content: [{ type: "text", text: "This person has not connected this account. They can use Sign in with Google on the left side of Chat." }],
         isError: true,
       },
     };
@@ -219,6 +238,18 @@ async function forward(
       redirect: "manual",
       signal: controller.signal,
     });
+    if (upstreamResponse.status === 401) {
+      const raw = await upstreamResponse.text();
+      const relayed = relayMailboxResponse(401, raw);
+      if (!response.headersSent) {
+        response.writeHead(relayed.status, {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+        });
+        response.end(relayed.body);
+      }
+      return;
+    }
     const out: Record<string, string> = {};
     for (const name of ["content-type", "mcp-session-id", "mcp-protocol-version", "cache-control"]) {
       const value = upstreamResponse.headers.get(name);

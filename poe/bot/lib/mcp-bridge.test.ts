@@ -4,7 +4,7 @@ import type { SessionInfo } from "@grok/agent-sdk";
 
 import calendar from "../mcp-connections/google-calendar.js";
 import gmail from "../mcp-connections/gmail.js";
-import { answerUnconnected, ensureMcpBridge, listConnectedTools, MCP_BRIDGE_PORT, stopMcpBridge, UNCONNECTED_BEARER } from "./mcp-bridge.js";
+import { answerUnconnected, ensureMcpBridge, listConnectedTools, MCP_BRIDGE_PORT, relayMailboxResponse, stopMcpBridge, UNCONNECTED_BEARER } from "./mcp-bridge.js";
 import { perUserAuth } from "./per-user-connection.js";
 
 assert.equal("url" in gmail ? gmail.url : "", `http://127.0.0.1:${MCP_BRIDGE_PORT}/gmail`);
@@ -67,12 +67,24 @@ try {
     signal: AbortSignal.timeout(8000),
   });
   const forwardedText = await forwarded.text();
+  assert.equal(forwarded.status, 200);
+  assert.match(forwardedText, /search_threads/);
   assert.doesNotMatch(forwardedText, /poe-mailbox/);
-  assert.notEqual(forwarded.status, 404);
 
   const signedOut = await listConnectedTools("gmail", `Bearer ${UNCONNECTED_BEARER}`);
   assert.deepEqual(signedOut, []);
-  await assert.rejects(() => listConnectedTools("gmail", "Bearer poe-forward-check"));
+
+  const rejected = relayMailboxResponse(
+    401,
+    JSON.stringify({ jsonrpc: "2.0", id: 1, result: { tools: [{ name: "search_threads" }] } }),
+  );
+  assert.equal(rejected.status, 200);
+  assert.match(rejected.body, /search_threads/);
+
+  const remoteTools = await listConnectedTools("gmail", "Bearer poe-forward-check");
+  assert.ok(remoteTools.some((tool) => tool.name === "search_threads"));
+  assert.ok(remoteTools.some((tool) => tool.name === "create_draft"));
+  assert.equal(remoteTools.some((tool) => tool.name === "send"), false);
 } finally {
   await stopMcpBridge();
 }
