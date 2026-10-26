@@ -3,8 +3,9 @@ import { defineTool } from "@grok/agent-sdk/tools";
 import { userIdForSessionAuth } from "../lib/accounts.js";
 import { IDENTITY } from "../lib/identity.js";
 import { connectionMatches, INTERFACES, interfaceForConnection } from "../lib/interfaces.js";
-import { connectableService } from "../lib/services.js";
-import { userHasService } from "../lib/user-oauth.js";
+import { listConnectedTools } from "../lib/mcp-bridge.js";
+import { connectableService, type ServiceId } from "../lib/services.js";
+import { authorizationHeaders, userHasService } from "../lib/user-oauth.js";
 
 export default defineTool({
   description:
@@ -12,8 +13,26 @@ export default defineTool({
   effect: "read",
   async execute(_input, ctx) {
     const names = ctx.host.mcp.names();
+    const principal = await userIdForSessionAuth(ctx.session.auth);
+    const personalTools = new Map<ServiceId, Array<{ name: string; description: string }>>();
+    for (const serviceId of ["gmail", "google-calendar"] as const) {
+      const headers = principal ? await authorizationHeaders(principal, serviceId) : null;
+      if (!headers) continue;
+      try {
+        personalTools.set(serviceId, await listConnectedTools(serviceId, headers.Authorization));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unavailable";
+        personalTools.set(serviceId, [{ name: "unavailable", description: message.slice(0, 160) }]);
+      }
+    }
     const servers: Array<{ name: string; interfaceId: string | null; tools: Array<{ name: string; description: string }> }> = [];
     for (const name of names) {
+      const matched = interfaceForConnection(name);
+      const personal = matched ? personalTools.get(matched.id as ServiceId) : undefined;
+      if (personal) {
+        servers.push({ name, interfaceId: matched?.id ?? null, tools: personal });
+        continue;
+      }
       let tools: Array<{ name: string; description: string }> = [];
       try {
         const listed = await ctx.host.mcp.listTools(name);
@@ -25,10 +44,8 @@ export default defineTool({
         const message = error instanceof Error ? error.message : "unavailable";
         tools = [{ name: "unavailable", description: message.slice(0, 160) }];
       }
-      const matched = interfaceForConnection(name);
       servers.push({ name, interfaceId: matched?.id ?? null, tools });
     }
-    const principal = await userIdForSessionAuth(ctx.session.auth);
     const interfaces = [];
     for (const spec of INTERFACES) {
       const personal = connectableService(spec.id);

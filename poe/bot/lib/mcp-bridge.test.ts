@@ -4,7 +4,7 @@ import type { SessionInfo } from "@grok/agent-sdk";
 
 import calendar from "../mcp-connections/google-calendar.js";
 import gmail from "../mcp-connections/gmail.js";
-import { answerUnconnected, ensureMcpBridge, MCP_BRIDGE_PORT, stopMcpBridge, UNCONNECTED_BEARER } from "./mcp-bridge.js";
+import { answerUnconnected, ensureMcpBridge, listConnectedTools, MCP_BRIDGE_PORT, stopMcpBridge, UNCONNECTED_BEARER } from "./mcp-bridge.js";
 import { perUserAuth } from "./per-user-connection.js";
 
 assert.equal("url" in gmail ? gmail.url : "", `http://127.0.0.1:${MCP_BRIDGE_PORT}/gmail`);
@@ -69,6 +69,10 @@ try {
   const forwardedText = await forwarded.text();
   assert.doesNotMatch(forwardedText, /poe-mailbox/);
   assert.notEqual(forwarded.status, 404);
+
+  const signedOut = await listConnectedTools("gmail", `Bearer ${UNCONNECTED_BEARER}`);
+  assert.deepEqual(signedOut, []);
+  await assert.rejects(() => listConnectedTools("gmail", "Bearer poe-forward-check"));
 } finally {
   await stopMcpBridge();
 }

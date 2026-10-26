@@ -24,7 +24,7 @@ Pass the interface id, whether `list_plugins` shows it connected, and the owner'
 
 If `connected` is false, say so. For Gmail and Google Calendar, the person opens Settings and chooses Sign in with Google. The Google app itself is saved by the owner on Admin. Other services are not available from Settings yet. Record a FAILED task. Do not invent a send, a slot, a document, or a call.
 
-Gmail and Google Calendar stay mounted as MCP servers named `gmail` and `google-calendar`. Call those names from the specialist. An empty tool list means this person has not finished Sign in with Google. If Google rejects the token, say the mailbox server did not answer and they can choose Sign in with Google again. Do not tell them the MCP server does not exist.
+Gmail and Google Calendar are MCP servers named `gmail` and `google-calendar`. Trust `list_plugins`: when `connected` is true, call that server and use the tool names it returned. When `connected` is false, the person chooses Sign in with Google in Settings. A sign-in expires, and Sign in with Google again replaces it. If a call fails, say the mailbox server did not answer and they can choose Sign in with Google again. Do not say the MCP server does not exist, and do not describe a connected account as an unfinished sign-in.
 
 People use Chat at the short address Poe prints, usually http://127.0.0.1:8080/chat. The playground is the owner's trace and uses the owner's mailbox. A schedule is not a person.
 
