@@ -35,7 +35,20 @@ const refreshes = new Map<string, Promise<Record<string, string> | null>>();
 export async function userHasService(userId: string, serviceId: string): Promise<boolean> {
   if (!safeUserId(userId) || !connectableService(serviceId)) return false;
   const saved = await readJson<SavedTokens>(tokenFile(userId, serviceId as ServiceId));
-  return typeof saved?.access_token === "string" && saved.access_token.length > 0;
+  return tokenIsUsable(saved);
+}
+
+/** A live access token, or an expired one that can still be refreshed. */
+export function tokenIsUsable(saved: SavedTokens | undefined): boolean {
+  if (typeof saved?.access_token !== "string" || saved.access_token.length === 0) return false;
+  if ((saved.expires_at ?? 0) > Date.now() + 60_000) return true;
+  return typeof saved.refresh_token === "string" && saved.refresh_token.length > 0;
+}
+
+/** Google only returns a refresh token when the sign-in asks for offline access. */
+export function applyGoogleOfflineAccess(url: URL): void {
+  url.searchParams.set("access_type", "offline");
+  url.searchParams.set("prompt", "consent");
 }
 
 export async function connectedServiceIds(userId: string): Promise<ServiceId[]> {
@@ -195,6 +208,7 @@ class FileProvider implements OAuthClientProvider {
 
   async redirectToAuthorization(url: URL): Promise<void> {
     if (this.refreshOnly) throw new Error("Reconnect required");
+    applyGoogleOfflineAccess(url);
     this.authorizationUrl = url.toString();
   }
 
