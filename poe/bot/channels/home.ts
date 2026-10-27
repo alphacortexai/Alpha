@@ -1,6 +1,7 @@
 import { defineChannel, GET, localDevStrict, POST } from "@grok/agent-sdk/channels";
 import * as z from "zod/v4";
 
+import { listAgents, saveAgent } from "../lib/agents.js";
 import { startPoeDoor, stopPoeDoor } from "../lib/door.js";
 import { publicBaseFromRequest } from "../lib/site.js";
 import { normalizeTasks, taskTitle, withTask, withToken, type WorkspaceTask } from "../lib/tasks.js";
@@ -22,6 +23,23 @@ export default defineChannel({
       description: "Poe, the agent workspace.",
       querySchema: z.object({}),
       handler: (request) => html(workspacePage(pageBase(request))),
+    }),
+    GET("/agents", {
+      description: "Specialist agents Poe can delegate to.",
+      querySchema: z.object({}),
+      handler: async () => json({ ok: true, agents: await listAgents() }),
+    }),
+    POST("/agents", {
+      description: "Add a specialist agent from the sidebar.",
+      bodySchema: z.object({
+        name: z.string().min(1).max(80),
+        job: z.string().min(1).max(4000),
+      }),
+      handler: async (_request, { body }) => {
+        const saved = await saveAgent(body.name, body.job);
+        if ("error" in saved) return json({ ok: false, error: saved.error }, 400);
+        return json({ ok: true, agent: saved, restart: "Press Enter in the dev window, then Poe can use this agent." });
+      },
     }),
     GET("/tasks", {
       description: "Recent tasks on this Poe.",
