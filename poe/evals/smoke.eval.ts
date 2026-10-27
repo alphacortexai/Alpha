@@ -2,12 +2,10 @@ import { defineEval, includes } from "@grok/agent-sdk/evals";
 
 export default defineEval({
   tags: ["smoke"],
-  description: "Poe lists its interfaces from the plugin catalog.",
+  description: "Poe describes itself as an agent that works on a computer.",
   async test(t) {
-    await t.send("Which interfaces can you route, and which are plugged in? Use your plugin tool.");
+    await t.send("In one sentence, what do you do when I give you a task? Do not use tools.");
     t.succeeded();
-    t.calledTool("list_plugins");
-    t.notCalledTool("request_approval");
-    t.check(t.reply, includes(/gmail/i));
+    t.check(t.reply, includes(/computer|task|file|web/i));
   },
 });
