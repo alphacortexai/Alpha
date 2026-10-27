@@ -2,7 +2,7 @@
   "name": "poe",
   "private": true,
   "type": "module",
-  "description": "Poe, a personal assistant that routes plugged-in MCP interfaces to specialists.",
+  "description": "Poe, an agent with its own computer.",
   "scripts": {
     "check": "tsc --noEmit",
     "dev": "agent-sdk dev"

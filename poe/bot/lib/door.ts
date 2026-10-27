@@ -221,6 +221,10 @@ async function proxy(request: IncomingMessage, response: ServerResponse, upstrea
     if (contentType) headers.set("content-type", contentType);
     if (accept) headers.set("accept", accept);
     const target = suffix ? `${upstream}/${suffix}${url.search}` : `${upstream}/${url.search}`;
+    if (suffix === "events" && method === "GET") {
+      await proxyStream(request, response, target, headers);
+      return;
+    }
     const upstreamResponse = await fetch(target, {
       method,
       headers,
@@ -245,6 +249,45 @@ async function proxy(request: IncomingMessage, response: ServerResponse, upstrea
     response.end(payload);
   } catch {
     if (!response.headersSent) sendPlain(response, 502, "Poe is not available.");
+  }
+}
+
+async function proxyStream(
+  request: IncomingMessage,
+  response: ServerResponse,
+  target: string,
+  headers: Headers,
+): Promise<void> {
+  const controller = new AbortController();
+  const stop = () => controller.abort();
+  request.on("close", stop);
+  try {
+    const upstreamResponse = await fetch(target, { method: "GET", headers, signal: controller.signal });
+    const type = upstreamResponse.headers.get("content-type") ?? "application/x-ndjson; charset=utf-8";
+    response.writeHead(upstreamResponse.status, {
+      "content-type": type,
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+    });
+    const body = upstreamResponse.body;
+    if (!body) {
+      response.end();
+      return;
+    }
+    const reader = body.getReader();
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      if (!response.write(Buffer.from(chunk.value))) {
+        await new Promise<void>((resolve) => response.once("drain", () => resolve()));
+      }
+    }
+    response.end();
+  } catch {
+    if (!response.headersSent) sendPlain(response, 502, "Poe is not available.");
+    else response.end();
+  } finally {
+    request.off("close", stop);
   }
 }
 
