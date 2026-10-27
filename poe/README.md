@@ -42,9 +42,9 @@ Then, from `poe`, put the client id and secret in the terminal environment and s
 set POE_GOOGLE_CLIENT_ID=your-client-id
 set POE_GOOGLE_CLIENT_SECRET=your-client-secret
 node bot/lib/prepare-gmail-oauth.mjs
-npx @grok/agent-sdk mcp oauth gmail
+node bot/lib/gmail-signin.mjs
 ```
 
-Sign in with the Gmail account in the page that opens. If Google says the app is not verified, choose Advanced and continue. The Gmail address has to be a test user while the consent screen is in Testing. Restart `dev`. Ask Poe what your latest email says. Until that sign-in finishes, Poe has no Gmail tools and cannot read mail.
+`npx @grok/agent-sdk mcp oauth gmail` can say "already authorized" without opening Google, because the server answers the first handshake with no login. Use `gmail-signin.mjs`. Sign in with the Gmail account in the page that opens. If Google says the app is not verified, choose Advanced and continue. The Gmail address has to be a test user while the consent screen is in Testing. Restart `dev`. Ask Poe what your latest email says. Until that sign-in finishes, Poe cannot read mail.
 
 These pages are for local `dev` or a supervised `serve`. On Cursor-managed hosting a custom channel returns an empty 202.

@@ -6,7 +6,8 @@
   "scripts": {
     "check": "tsc --noEmit",
     "dev": "agent-sdk dev",
-    "gmail-client": "node bot/lib/prepare-gmail-oauth.mjs"
+    "gmail-client": "node bot/lib/prepare-gmail-oauth.mjs",
+    "gmail-signin": "node bot/lib/gmail-signin.mjs"
   },
   "dependencies": {
     "@grok/agent-sdk": "^0.2.29",
