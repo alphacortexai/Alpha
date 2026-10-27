@@ -5,7 +5,8 @@
   "description": "Poe, an agent with its own computer.",
   "scripts": {
     "check": "tsc --noEmit",
-    "dev": "agent-sdk dev"
+    "dev": "agent-sdk dev",
+    "gmail-client": "node --experimental-strip-types bot/lib/prepare-gmail-oauth.ts"
   },
   "dependencies": {
     "@grok/agent-sdk": "^0.2.29",

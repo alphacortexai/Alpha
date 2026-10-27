@@ -8,7 +8,7 @@ description: >-
 # Work on the computer
 
 1. Restate the task in one line, then the steps you will take.
-2. Browse with `browse_web` for a known URL. Use `webSearch` when you need to find a page, then open the result. For a stock, forex, crypto, or economic figure, use the Alpha Vantage tools when they are listed.
+2. Browse with `browse_web` for a known URL. Use `webSearch` when you need to find a page, then open the result. For a stock, forex, crypto, or economic figure, use the Alpha Vantage tools when they are listed. For mail, use the Gmail tools when they are listed. Search and read first. Create a draft when the person asked for one, and tell them to send it from Gmail.
 3. Write files in the session workspace. Run them with the shell when the task asks for a script or a check.
 4. Read a file back after you write it if the result depends on its contents.
 5. Reply with the outcome and the paths. Tag a finished file as a `deliverable`.
