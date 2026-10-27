@@ -26,4 +26,25 @@ npx @grok/agent-sdk mcp oauth alphavantage
 
 The page asks for that key. After it finishes, restart `dev` and ask for a price, such as the latest quote for IBM. Tasks still run before this step; they just have no market-data tools yet.
 
+## Gmail
+
+Gmail is connected at `https://gmailmcp.googleapis.com/mcp/v1`. It can search, read, label, and draft. It does not send. You send the draft from Gmail.
+
+In the Google Cloud project, enable the Gmail API and the Gmail MCP API. The Google account has to be in the Workspace Developer Preview program. On the OAuth client, choose Web application, turn on "Use this client for an AI-powered agent", and add this authorized redirect URI:
+
+```text
+http://localhost:8787/callback
+```
+
+Then, from `poe`, put the client id and secret in the terminal environment and save them for Poe. In Command Prompt:
+
+```bat
+set POE_GOOGLE_CLIENT_ID=your-client-id
+set POE_GOOGLE_CLIENT_SECRET=your-client-secret
+node bot/lib/prepare-gmail-oauth.mjs
+npx @grok/agent-sdk mcp oauth gmail
+```
+
+Sign in with the Gmail account in the page that opens. Restart `dev`. Ask Poe what your latest email says.
+
 These pages are for local `dev` or a supervised `serve`. On Cursor-managed hosting a custom channel returns an empty 202.
