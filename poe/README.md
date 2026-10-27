@@ -41,7 +41,7 @@ Then, from `poe`, put the client id and secret in the terminal environment and s
 ```bat
 set POE_GOOGLE_CLIENT_ID=your-client-id
 set POE_GOOGLE_CLIENT_SECRET=your-client-secret
-node --experimental-strip-types bot/lib/prepare-gmail-oauth.ts
+node bot/lib/prepare-gmail-oauth.mjs
 npx @grok/agent-sdk mcp oauth gmail
 ```
 
