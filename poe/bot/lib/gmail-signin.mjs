@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { chmod, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 const GMAIL_MCP_URL = "https://gmailmcp.googleapis.com/mcp/v1";
@@ -166,8 +167,16 @@ async function main() {
   console.log("Gmail is signed in. Restart dev, then ask Poe about your mail.");
 }
 
-const invoked = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (invoked) {
+function isDirectRun() {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(entry)).href;
+  } catch {
+    return false;
+  }
+}
+if (isDirectRun()) {
   main().catch((error) => {
     console.error(error instanceof Error ? error.message : "Gmail sign-in failed.");
     process.exitCode = 1;
