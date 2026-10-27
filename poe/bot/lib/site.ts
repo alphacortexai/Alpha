@@ -2,7 +2,7 @@
 
 const CHANNEL_MARKER = "/v1/channels/home";
 
-const DOOR_PATHS = new Set(["", "run", "follow", "events", "tasks"]);
+const DOOR_PATHS = new Set(["", "run", "follow", "events", "tasks", "agents"]);
 
 export function publicBaseFromRequest(request: Request): string {
   const hinted = request.headers.get("x-poe-public-base");

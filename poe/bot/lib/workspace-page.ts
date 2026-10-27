@@ -33,11 +33,32 @@ export function workspacePage(base: string): string {
     .brand span { color: var(--muted); font-size: 12px; }
     .new-task { margin: 8px 12px 14px; border: 0; border-radius: 10px; background: #111318; color: white; padding: 10px 12px; font-weight: 650; }
     .side h2 { margin: 0; padding: 0 16px 8px; font-size: 12px; font-weight: 650; color: var(--muted); }
-    .tasks { overflow: auto; padding: 0 8px 16px; display: flex; flex-direction: column; gap: 2px; }
+    .tasks { flex: 1; min-height: 0; overflow: auto; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 2px; }
     .task { border: 0; background: transparent; text-align: left; border-radius: 8px; padding: 8px 10px; }
     .task strong { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .task em { display: block; font-style: normal; color: var(--muted); font-size: 12px; }
     .task.active, .task:hover { background: var(--paper); }
+    .agents { max-height: 24vh; overflow: auto; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 2px; }
+    .agent { border: 0; background: transparent; text-align: left; border-radius: 8px; padding: 8px 10px; }
+    .agent strong { display: block; font-weight: 650; }
+    .agent span { display: block; color: var(--muted); font-size: 12px; }
+    .agent-form { display: flex; flex-direction: column; gap: 6px; margin: 0 12px 16px; }
+    .agent-form input, .agent-form textarea { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: white; }
+    .agent-form textarea { min-height: 72px; resize: vertical; }
+    .agent-note { margin: 0; color: var(--muted); font-size: 12px; }
+    .sub, .doc-card { max-width: 680px; width: 100%; margin: 0 auto; border: 1px solid var(--line); background: white; border-radius: 12px; padding: 10px 12px; }
+    .sub-head, .doc-head { display: flex; align-items: center; gap: 8px; }
+    .sub-head strong, .doc-head strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sub p { margin: 6px 0 0; }
+    .sub i, .doc-card i { font-style: normal; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+    .sub em { font-style: normal; color: var(--blue); font-size: 12px; }
+    .sub.done em { color: #067647; }
+    .sub.bad em { color: var(--danger); }
+    .doc-inline { margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: white; }
+    .doc-frame { width: 100%; min-height: 480px; height: 100%; border: 0; background: white; }
+    .doc-inline .doc-frame { height: 320px; min-height: 0; }
+    .doc-paper { margin: 0; padding: 22px; background: white; min-height: 100%; white-space: pre-wrap; }
+    .doc-inline .doc-paper { max-height: 320px; overflow: auto; min-height: 0; }
     .stage { flex: 1; min-width: 0; display: flex; }
     .work { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
     .home { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 32px 24px 12vh; }
@@ -110,6 +131,14 @@ export function workspacePage(base: string): string {
     <button class="new-task" type="button" id="new-task">New task</button>
     <h2>Tasks</h2>
     <div class="tasks" id="tasks"></div>
+    <h2>Agents</h2>
+    <div class="agents" id="agents"></div>
+    <form class="agent-form" id="agent-form">
+      <input id="agent-name" name="name" maxlength="80" placeholder="Name, like Research" />
+      <textarea id="agent-job" name="job" maxlength="4000" placeholder="What should this agent do?"></textarea>
+      <button class="run" type="submit">Add agent</button>
+      <p class="agent-note" id="agent-note"></p>
+    </form>
   </aside>
   <div class="stage">
     <section class="work">
@@ -135,7 +164,7 @@ export function workspacePage(base: string): string {
       </div>
       <div class="thread-wrap">
         <div class="thread-bar">
-          <button class="quiet menu" type="button" id="nav-toggle">Tasks</button>
+          <button class="quiet menu" type="button" id="nav-toggle">Menu</button>
           <h2 id="task-title">Task</h2>
           <button class="quiet menu" type="button" id="computer-toggle">Computer</button>
         </div>
@@ -162,6 +191,7 @@ export function workspacePage(base: string): string {
         <button type="button" class="on" data-tab="browser">Browser</button>
         <button type="button" data-tab="terminal">Terminal</button>
         <button type="button" data-tab="files">Files</button>
+        <button type="button" data-tab="docs">Docs</button>
       </div>
       <div class="screen" id="screen-browser">
         <div class="empty-screen" id="browser-empty">The browser opens when Poe reads a page.</div>
@@ -176,11 +206,15 @@ export function workspacePage(base: string): string {
       <div class="screen" id="screen-files" hidden>
         <div class="files" id="files"></div>
       </div>
+      <div class="screen" id="screen-docs" hidden>
+        <div class="empty-screen" id="docs-empty">Documents Poe creates open here.</div>
+        <div id="docs-view" hidden></div>
+      </div>
     </section>
   </div>
   <script>
     const base = ${JSON.stringify(root).replace(/</g, "\\u003c")};
-    const state = { task: null, lastIndex: -1, stream: null, seen: new Set(), users: new Set(), calls: new Map(), files: new Map() };
+    const state = { task: null, lastIndex: -1, stream: null, seen: new Set(), users: new Set(), calls: new Map(), files: new Map(), docs: new Map() };
 
     const tasksNode = document.querySelector("#tasks");
     const timeline = document.querySelector("#timeline");
@@ -202,7 +236,25 @@ export function workspacePage(base: string): string {
     });
     bindForm("#home-form", "#home-message", "#home-error");
     bindForm("#follow-form", "#follow-message", "#follow-error");
+    document.querySelector("#agent-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const name = document.querySelector("#agent-name").value.trim();
+      const job = document.querySelector("#agent-job").value.trim();
+      const note = document.querySelector("#agent-note");
+      try {
+        const data = await post("agents", { name, job });
+        document.querySelector("#agent-name").value = "";
+        document.querySelector("#agent-job").value = "";
+        note.textContent = data.restart || "Agent added.";
+        await loadAgents();
+      } catch (error) {
+        note.textContent = error instanceof Error ? error.message : "That agent was not added.";
+      }
+    });
     loadTasks();
+    loadAgents().catch((error) => {
+      document.querySelector("#agent-note").textContent = error instanceof Error ? error.message : "Agents could not be loaded.";
+    });
 
     function bindForm(formId, fieldId, errorId) {
       const form = document.querySelector(formId);
@@ -268,6 +320,10 @@ export function workspacePage(base: string): string {
       state.users = new Set();
       state.calls = new Map();
       state.files = new Map();
+      state.docs = new Map();
+      document.querySelector("#docs-empty").hidden = false;
+      document.querySelector("#docs-view").hidden = true;
+      document.querySelector("#docs-view").replaceChildren();
       timeline.replaceChildren();
       document.querySelector("#terminal").replaceChildren();
       document.querySelector("#files").replaceChildren();
@@ -334,6 +390,8 @@ export function workspacePage(base: string): string {
       if (event.type === "actions.requested") (data.calls || []).forEach(noteCall);
       if (event.type === "action.result") noteResult(data);
       if (event.type === "artifact.tagged") noteArtifact(data);
+      if (event.type === "subagent.called") noteSubagent(data);
+      if (event.type === "subagent.completed") finishSubagent(data);
       if (event.type === "turn.started") setWorking(true);
       if (event.type === "turn.completed" || event.type === "session.waiting") setWorking(false);
       if (event.type === "turn.completed" && data.result) setAssistant(event.turnId || "turn", data.result);
@@ -389,9 +447,11 @@ export function workspacePage(base: string): string {
 
     function noteCall(call) {
       if (!call || !call.callId || state.calls.has(call.callId)) return;
-      const kind = kindOf(call.toolName);
+      const kind = String(call.toolName || "").toLowerCase() === "task" ? "task" : kindOf(call.toolName);
       const label = argOf(call.args, ["command", "cmd", "url", "query", "q", "path", "file_path", "filePath"]) || call.toolName;
-      state.calls.set(call.callId, { kind, label });
+      const contents = fullArg(call.args, ["contents", "content", "text", "html", "markdown"]);
+      state.calls.set(call.callId, { kind, label, contents });
+      if (String(call.toolName || "").toLowerCase() === "task") return;
       const node = document.createElement("div");
       node.className = "step";
       node.setAttribute("data-call", call.callId);
@@ -411,7 +471,8 @@ export function workspacePage(base: string): string {
         showTab("terminal");
         pushTerminal(label, "");
       }
-      if (window.matchMedia("(max-width: 900px)").matches) document.body.classList.add("computer-open");
+      if (contents) addDoc(label, contents);
+      if (!contents && window.matchMedia("(max-width: 900px)").matches) document.body.classList.add("computer-open");
     }
 
     function noteResult(data) {
@@ -425,7 +486,7 @@ export function workspacePage(base: string): string {
         setBrowser(page.url || known.label, page.ok === false ? (page.error || body) : (page.text || body), page.title || page.url || "Browser");
       } else if (known.kind === "files") {
         setFile(known.label, body);
-      } else {
+      } else if (known.kind !== "task") {
         const blocks = document.querySelectorAll("#terminal .block");
         const last = blocks[blocks.length - 1];
         if (last) last.querySelector("pre").textContent = body || (data.isError ? "The command failed." : "");
@@ -436,7 +497,113 @@ export function workspacePage(base: string): string {
       const path = data && data.data && data.data.path ? data.data.path : (data.title || "Deliverable");
       const summary = data && data.data && data.data.summary ? data.data.summary : "";
       setFile(path, summary);
-      showTab("files");
+      if (!state.docs.has(path) && summary) addDoc(path, summary);
+      if (state.docs.has(path)) showDoc(path);
+    }
+
+    function noteSubagent(data) {
+      const id = data.callId || data.name || "agent";
+      let node = byAttr("data-sub", id);
+      if (!node) {
+        node = document.createElement("div");
+        node.className = "sub";
+        node.setAttribute("data-sub", id);
+        const head = document.createElement("div");
+        head.className = "sub-head";
+        const kicker = document.createElement("i");
+        kicker.textContent = "Subprocess";
+        const title = document.createElement("strong");
+        title.textContent = data.name || "Agent";
+        const status = document.createElement("em");
+        status.textContent = "Working";
+        head.append(kicker, title, status);
+        const detail = document.createElement("p");
+        detail.textContent = data.description || "";
+        node.append(head, detail);
+        timeline.appendChild(node);
+      }
+    }
+
+    function finishSubagent(data) {
+      const id = data.callId || data.name || "agent";
+      let node = byAttr("data-sub", id);
+      if (!node) {
+        noteSubagent(data);
+        node = byAttr("data-sub", id);
+      }
+      if (!node) return;
+      node.classList.toggle("bad", data.isError === true);
+      node.classList.toggle("done", data.isError !== true);
+      const status = node.querySelector("em");
+      if (status) status.textContent = data.isError ? "Stopped" : "Done";
+    }
+
+    function addDoc(name, body) {
+      const title = String(name || "Document").slice(0, 180);
+      const text = String(body || "").slice(0, 80000);
+      if (!text.trim()) return;
+      state.docs.set(title, text);
+      let card = byAttr("data-doc", title);
+      if (!card) {
+        card = document.createElement("div");
+        card.className = "doc-card";
+        card.setAttribute("data-doc", title);
+        const head = document.createElement("div");
+        head.className = "doc-head";
+        const kicker = document.createElement("i");
+        kicker.textContent = "Document";
+        const label = document.createElement("strong");
+        label.textContent = title;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "quiet";
+        button.textContent = "Open larger";
+        button.addEventListener("click", () => showDoc(title));
+        head.append(kicker, label, button);
+        const inline = document.createElement("div");
+        inline.className = "doc-inline";
+        card.append(head, inline);
+        timeline.appendChild(card);
+      }
+      paintDoc(card.querySelector(".doc-inline"), title, text);
+      const view = document.querySelector("#docs-view");
+      paintDoc(view, title, text);
+      document.querySelector("#docs-empty").hidden = true;
+      view.hidden = false;
+    }
+
+    function showDoc(title) {
+      const text = state.docs.get(title) || "";
+      const view = document.querySelector("#docs-view");
+      paintDoc(view, title, text);
+      document.querySelector("#docs-empty").hidden = true;
+      view.hidden = false;
+      showTab("docs");
+      if (window.matchMedia("(max-width: 900px)").matches) document.body.classList.add("computer-open");
+    }
+
+    function paintDoc(host, title, text) {
+      if (!host) return;
+      host.replaceChildren();
+      if (isHtml(title, text)) {
+        const frame = document.createElement("iframe");
+        frame.className = "doc-frame";
+        frame.setAttribute("sandbox", "");
+        frame.setAttribute("title", title);
+        frame.srcdoc = text;
+        host.appendChild(frame);
+      } else {
+        const paper = document.createElement("pre");
+        paper.className = "doc-paper";
+        paper.textContent = text;
+        host.appendChild(paper);
+      }
+    }
+
+    function isHtml(name, text) {
+      const lower = String(name || "").toLowerCase();
+      const start = String(text || "").trim().slice(0, 40).toLowerCase();
+      return lower.endsWith(".html") || lower.endsWith(".htm") || start.startsWith("<!doctype") || start.startsWith("<html");
     }
 
     function setBrowser(url, text, title) {
@@ -486,6 +653,43 @@ export function workspacePage(base: string): string {
       document.querySelector("#screen-browser").hidden = name !== "browser";
       document.querySelector("#screen-terminal").hidden = name !== "terminal";
       document.querySelector("#screen-files").hidden = name !== "files";
+      document.querySelector("#screen-docs").hidden = name !== "docs";
+    }
+
+    function fullArg(args, keys) {
+      if (!args || typeof args !== "object") return "";
+      for (const key of keys) {
+        if (typeof args[key] === "string" && args[key].trim()) return args[key].slice(0, 80000);
+      }
+      return "";
+    }
+
+    async function loadAgents() {
+      const data = await post("agents", null);
+      const list = document.querySelector("#agents");
+      list.replaceChildren();
+      const agents = data.agents || [];
+      if (agents.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "agent-note";
+        empty.textContent = "None yet. Add one below, then press Enter in the dev window.";
+        list.appendChild(empty);
+        return;
+      }
+      agents.forEach((agent) => {
+        const row = document.createElement("div");
+        row.className = "agent";
+        const name = document.createElement("strong");
+        name.textContent = agentLabel(agent.id);
+        const job = document.createElement("span");
+        job.textContent = agent.description || "";
+        row.append(name, job);
+        list.appendChild(row);
+      });
+    }
+
+    function agentLabel(id) {
+      return String(id || "").split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
     }
 
     function setWorking(working) {

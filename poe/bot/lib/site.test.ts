@@ -33,6 +33,7 @@ assert.equal(doorSuffix("/run"), "run");
 assert.equal(doorSuffix("/events"), "events");
 assert.equal(doorSuffix("/tasks"), "tasks");
 assert.equal(doorSuffix("/follow"), "follow");
+assert.equal(doorSuffix("/agents"), "agents");
 assert.equal(doorSuffix("/../debug/view"), undefined);
 assert.equal(doorSuffix("/run/../tasks"), undefined);
 assert.equal(doorSuffix("/%2e%2e/secret"), undefined);

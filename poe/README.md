@@ -12,7 +12,7 @@ npx @grok/agent-sdk dev
 
 Restart `dev` after pulling. Poe prints a short address, usually [http://127.0.0.1:8080/](http://127.0.0.1:8080/). The same workspace is on the channel path the server prints.
 
-Type a task and choose Run. The left side is your tasks. The main column is the conversation. Poe's computer, on the right, shows the browser, the terminal, and the files. On a narrow window, Tasks and Computer open those panels.
+Type a task and choose Run. The left side is your tasks. Under Agents, type a name and what that specialist should do, then choose Add agent. Press Enter in the dev window so Poe can delegate to it. The main column is the conversation. A specialist shows up there as a subprocess, and a file Poe writes opens in that same column. Poe's computer, on the right, shows the browser, the terminal, the files, and a larger view of those documents. On a narrow window, Menu and Computer open those panels.
 
 The computer can read public pages and work in its session workspace. It does not send email, post, or pay. A task that asks for that stops and says what is missing.
 
