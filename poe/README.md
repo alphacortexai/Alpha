@@ -45,6 +45,6 @@ node bot/lib/prepare-gmail-oauth.mjs
 npx @grok/agent-sdk mcp oauth gmail
 ```
 
-Sign in with the Gmail account in the page that opens. Restart `dev`. Ask Poe what your latest email says.
+Sign in with the Gmail account in the page that opens. If Google says the app is not verified, choose Advanced and continue. The Gmail address has to be a test user while the consent screen is in Testing. Restart `dev`. Ask Poe what your latest email says. Until that sign-in finishes, Poe has no Gmail tools and cannot read mail.
 
 These pages are for local `dev` or a supervised `serve`. On Cursor-managed hosting a custom channel returns an empty 202.
